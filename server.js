@@ -3,6 +3,22 @@ const fs = require('fs').promises;
 const path = require('path');
 
 const app = express();
+
+// Security middleware
+app.use((req, res, next) => {
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+  // Enable XSS protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  // Restrict access to data files
+  if (req.path.startsWith('/data') || req.path.startsWith('/config') || req.path.endsWith('.json')) {
+    res.setHeader('X-Robots-Tag', 'noindex');
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -324,7 +340,7 @@ app.post('/api/game/create', async (req, res) => {
     const ownership = {};
     const houses = {};
     props.forEach(p => { ownership[p.name] = null; houses[p.name] = 0; });
-    const game = { players: players.map((name, idx) => ({ id: idx+1, name, cash: parseInt(startingCash,10) || 1500, properties: [] })), currentTurn: 0, ownership, houses, housesBoughtThisTurn: {}, firstRollMade: false };
+    const game = { players: players.map((name, idx) => ({ id: idx+1, name, cash: parseInt(startingCash,10) || 1500, properties: [] })), currentTurn: 0, ownership, houses, housesBoughtThisTurn: {}, propertiesBoughtThisTurn: {}, firstRollMade: false };
     if (propertyFile) game.propertyFile = propertyFile;
     await writeGame(game);
     await writeActions([]);
@@ -404,24 +420,31 @@ app.post('/api/game/buy', async (req, res) => {
     }
     const prop = props.find(p => p.name === propertyName);
     if (!prop) return res.status(404).json({ error: 'Property not found' });
+    const propValue = Math.max(1, parseInt(prop.value, 10) || 0);
+    if (!propValue) return res.status(400).json({ error: 'Property value is invalid' });
     if (game.ownership[propertyName]) return res.status(400).json({ error: 'Property already owned' });
     const player = game.players.find(p => p.id === playerId);
     if (!player) return res.status(404).json({ error: 'Player not found' });
-    // enforce one house purchase per player per turn
-    game.housesBoughtThisTurn = game.housesBoughtThisTurn || {};
-    const alreadyBought = game.housesBoughtThisTurn[playerId] || 0;
-    if (alreadyBought >= 1) return res.status(400).json({ error: 'Only one house purchase allowed per turn' });
-    if (player.cash < prop.value) return res.status(400).json({ error: 'Insufficient funds' });
-    player.cash -= prop.value;
+    
+    // enforce one property purchase per player per turn (trades don't count)
+    game.propertiesBoughtThisTurn = game.propertiesBoughtThisTurn || {};
+    const propertiesBought = game.propertiesBoughtThisTurn[playerId] || 0;
+    if (propertiesBought >= 1) return res.status(400).json({ error: 'Only one property purchase allowed per turn' });
+    
+    if (player.cash < propValue) return res.status(400).json({ error: 'Insufficient funds' });
+    player.cash -= propValue;
     player.properties.push(propertyName);
     game.ownership[propertyName] = playerId;
-        await writeGame(game);
-        // log action
-        const actions = await readActions();
-        const entry = { type: 'buy', playerId, playerName: player.name, property: propertyName, value: prop.value, timestamp: new Date().toISOString() };
-        actions.push(entry);
-        await writeActions(actions);
-        res.json({ ok: true, game, action: entry });
+    game.propertiesBoughtThisTurn[playerId] = (game.propertiesBoughtThisTurn[playerId] || 0) + 1;
+    
+    await writeGame(game);
+    // log action
+    const actions = await readActions();
+    const entry = { type: 'buy', playerId, playerName: player.name, property: propertyName, value: propValue, timestamp: new Date().toISOString() };
+    actions.push(entry);
+    await writeActions(actions);
+    await appendLogLine(`${player.name} bought ${propertyName} for ${propValue}`);
+    res.json({ ok: true, game, action: entry });
   } catch (err) {
     res.status(500).json({ error: 'Failed to buy property' });
   }
@@ -530,13 +553,15 @@ app.post('/api/game/end-turn', async (req, res) => {
   try {
     const game = await readGame();
     game.currentTurn = (game.currentTurn + 1) % (game.players.length || 1);
-    // reset per-turn house purchase tracking for new turn
+    // reset per-turn purchase tracking for new turn
     game.housesBoughtThisTurn = {};
+    game.propertiesBoughtThisTurn = {};
     await writeGame(game);
     const actions = await readActions();
     const entry = { type: 'end-turn', playerId: game.players[game.currentTurn].id, playerName: game.players[game.currentTurn].name, timestamp: new Date().toISOString() };
     actions.push(entry);
     await writeActions(actions);
+    await appendLogLine(`Turn ended. Next player: ${game.players[game.currentTurn].name}`);
     res.json({ ok: true, game, action: entry });
   } catch (err) {
     res.status(500).json({ error: 'Failed to end turn' });
@@ -645,9 +670,11 @@ app.get('/api/player-logs/:playerId', async (req, res) => {
   try {
     const actions = await readActions();
     const rolls = await readRolls();
+    const game = await readGame();
+    const playerName = game.players.find(p => p.id === playerId)?.name;
     
     // Filter to only this player's actions
-    const playerActions = actions.filter(a => a.playerId === playerId || a.playerName === (await readGame()).players.find(p => p.id === playerId)?.name);
+    const playerActions = actions.filter(a => a.playerId === playerId || a.playerName === playerName);
     const playerRolls = rolls.filter(r => r.playerId === playerId);
     
     // Merge and sort by timestamp

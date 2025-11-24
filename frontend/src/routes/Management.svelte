@@ -16,6 +16,24 @@
   let activeTab = 'properties'; // 'properties', 'transfers', 'log', 'admin'
   let logView = 'own'; // 'own' or 'all'
   let logFilter = 'all'; // 'all', 'roll', 'property', 'transfer'
+  let rollCountdown = 0;
+  let showRollCountdown = false;
+
+  // Color name to hex mapping
+  const colorMap = {
+    'Brown': '#8B4513',
+    'Light Blue': '#ADD8E6',
+    'Pink': '#FF69B4',
+    'Orange': '#FFA500',
+    'Red': '#FF0000',
+    'Yellow': '#FFFF00',
+    'Green': '#00AA00',
+    'Dark Blue': '#00008B'
+  };
+
+  function getColorHex(colorName) {
+    return colorMap[colorName] || '#999';
+  }
 
   async function loadAll(){
     try {
@@ -89,9 +107,25 @@
     try {
       const result = await postJSON('/api/roll', { count: 2, sides: 6, playerId: player.id });
       await loadAll();
+      
+      // Show countdown after roll
+      showRollCountdown = true;
+      rollCountdown = 30;
+      const countdown = setInterval(() => {
+        rollCountdown--;
+        if (rollCountdown <= 0) {
+          clearInterval(countdown);
+          showRollCountdown = false;
+        }
+      }, 1000);
     } catch (e) {
       errorMsg = `Roll failed: ${e.message}`;
     }
+  }
+  
+  function skipRollCountdown() {
+    showRollCountdown = false;
+    rollCountdown = 0;
   }
 
   async function logManual(){
@@ -160,18 +194,24 @@
   <button on:click={() => activeTab = 'log'} style="padding: 8px 16px; border: none; background: {activeTab === 'log' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'log' ? 'white' : 'black'}; cursor: pointer;">Logs</button>
 </div>
 
-{#if activeTab === 'properties'}
+  {#if activeTab === 'properties'}
   <h3>Properties</h3>
   {#each properties as p}
-    <div style="margin:8px 0;padding:8px;border:1px solid #ddd;border-radius:6px">
-      <strong>{p.name}</strong> — ${p.value} <em>({p.color})</em>
-      <div>Owner: {ownerName(p) || '(available)'} {#if housesCount(p)>0} — houses: {housesCount(p)}{/if}</div>
-      {#if !ownerName(p)}
-        <button on:click={() => buy(p)}>Buy</button>
-      {:else if ownerName(p) === (game.players[game.currentTurn] && game.players[game.currentTurn].name)}
-        <button on:click={() => buyHouse(p)}>Buy House</button>
-        <button on:click={() => buyHotel(p)}>Buy Hotel</button>
-      {/if}
+    <div style="margin:8px 0;display:flex;border:1px solid #ddd;border-radius:6px;overflow:hidden">
+      <div style="width:12px;background:{getColorHex(p.color)};cursor:help;position:relative;border-right:1px solid #999" title={p.color}>
+      </div>
+      <div style="flex:1;padding:8px">
+        <strong>{p.name}</strong> — ${p.value}
+        <div>Owner: {ownerName(p) || '(available)'} {#if housesCount(p)>0} — houses: {housesCount(p)}{/if}</div>
+        <div style="margin-top:8px">
+          {#if !ownerName(p)}
+            <button on:click={() => buy(p)} style="padding:4px 12px;background:#4caf50;color:white;border:none;cursor:pointer;border-radius:4px">Buy</button>
+          {:else if ownerName(p) === (game.players[game.currentTurn] && game.players[game.currentTurn].name)}
+            <button on:click={() => buyHouse(p)} style="padding:4px 12px;background:#2196f3;color:white;border:none;cursor:pointer;border-radius:4px;margin-right:4px">Buy House</button>
+            <button on:click={() => buyHotel(p)} style="padding:4px 12px;background:#ff9800;color:white;border:none;cursor:pointer;border-radius:4px">Buy Hotel</button>
+          {/if}
+        </div>
+      </div>
     </div>
   {/each}
 
@@ -195,8 +235,14 @@
   <h3>Dice Rolls & Actions</h3>
   <div style="margin-bottom: 12px;">
     <button on:click={() => { doRoll(); }} style="padding:8px 16px;background:#4caf50;color:white;border:none;cursor:pointer;margin-right:8px">Roll Dice</button>
-    <button on:click={() => { logManual(); }} style="padding:8px 16px;background:#ff9800;color:white;border:none;cursor:pointer;margin-right:8px">Log Manual Roll</button>
   </div>
+  
+  {#if showRollCountdown}
+    <div style="background:#f0f0f0;padding:12px;border-radius:4px;margin-bottom:12px;border-left:4px solid #2196f3">
+      <p style="margin:0;color:#666">Auto-advancing in <strong>{rollCountdown}s</strong></p>
+      <button on:click={skipRollCountdown} style="padding:4px 12px;background:#ff9800;color:white;border:none;cursor:pointer;border-radius:4px;font-size:12px;margin-top:8px">Skip</button>
+    </div>
+  {/if}
   
   <h4>{game.players.length ? game.players[game.currentTurn].name + "'s Activity" : 'Activity'}</h4>
   <div style="margin-bottom: 12px;">
@@ -231,7 +277,3 @@
     {/each}
   </ul>
 {/if}
-
-<div style="margin-top: 32px; text-align: center;">
-  <button on:click={endTurn} style="padding:12px 24px;background:#e74c3c;color:white;border:none;cursor:pointer;font-weight:bold">End Turn</button>
-</div>

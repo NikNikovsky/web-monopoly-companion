@@ -18,6 +18,8 @@
   let existingGame = null;
   let rolloffMode = null; // 'auto' or 'manual' or null
   let manualRollValues = {}; // store manual roll inputs by player id
+  let rolloffCountdown = 0; // countdown timer in seconds
+  let showRolloffResults = false; // show results before auto-advancing
 
   const loadConfigs = async () => {
     try {
@@ -117,7 +119,11 @@
       if (!winner) throw new Error('No roll results');
       await postJSON('/api/game/set-first', { playerId: winner.id });
       await loadGame();
+      
+      // Show results and auto-advance immediately
+      showRolloffResults = true;
       rolloffComplete = true;
+      showRolloffResults = false;
       dispatch('gameReady');
     } catch (e) {
       errorMsg = e.message || 'Roll-off failed';
@@ -172,6 +178,13 @@
     } catch (e) {
       errorMsg = 'Roll failed: ' + (e.message || 'unknown error');
     }
+  }
+
+  const skipCountdown = () => {
+    rolloffCountdown = 0;
+    rolloffComplete = true;
+    showRolloffResults = false;
+    dispatch('gameReady');
   }
 
   const init = async () => {
@@ -253,7 +266,21 @@
   </ul>
 {/if}
 
-{#if rollResults.length}
+{#if showRolloffResults}
+  <div style="background:#e3f2fd;padding:16px;border-radius:6px;margin:16px 0;border:2px solid #2196f3;text-align:center">
+    <h3>Rolloff Results</h3>
+    <ul style="list-style:none;padding:0">
+      {#each rollResults as r}
+        <li style="padding:8px;font-weight:{r.id === rollResults[0].id ? 'bold' : 'normal'};color:{r.id === rollResults[0].id ? '#2196f3' : '#333'}">
+          {r.name}: {r.rolls.join(', ')} (sum <strong>{r.sum}</strong>)
+        </li>
+      {/each}
+    </ul>
+    <p style="font-size:1.2em;margin-top:16px;color:#2196f3"><strong>{rollResults[0]?.name}</strong> goes first!</p>
+    <p style="color:#666;margin:12px 0">Auto-continuing in <strong>{rolloffCountdown}s</strong></p>
+    <button on:click={skipCountdown} style="padding:8px 16px;background:#ff9800;color:white;border:none;cursor:pointer;border-radius:4px">Skip Countdown</button>
+  </div>
+{:else if rollResults.length}
   <h3>Roll Off Results</h3>
   <ul>
     {#each rollResults as r}

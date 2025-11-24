@@ -6,6 +6,7 @@
   let state = 'intro'; // 'intro', 'management', 'editor'
   let gameStarted = false;
   let firstRollMade = false;
+  let managementComponent = null;
 
   function navigate(s) {
     // only allow transitions when appropriate
@@ -38,6 +39,24 @@
     state = 'intro'; // go back to intro to show dice UI for next player
   }
 
+
+  async function endTurn() {
+    try {
+      const response = await fetch('/api/game/end-turn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      if (response.ok) {
+        onTurnEnd();
+      } else {
+        alert('Failed to end turn');
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
   function confirmResetGame() {
     if (confirm('Are you sure you want to return to the main menu? This will end your turn.')) {
       resetGame();
@@ -57,7 +76,9 @@
   nav button:hover { text-decoration-line:underline; color:darkblue }
   nav button:disabled { color:#ccc; cursor:not-allowed; text-decoration:none }
   nav .nav-left { display:flex }
-  nav .nav-right { display:flex }
+  nav .nav-right { display:flex;gap:12px;align-items:center }
+  nav .endTurnBtn { background:#e74c3c !important;color:white !important;text-decoration:none !important;padding:6px 12px !important;border-radius:4px;font:inherit }
+  nav .endTurnBtn:hover { background:#c0392b !important }
   .container { padding:16px; }
 </style>
 
@@ -66,9 +87,14 @@
     {#if state !== 'intro'}
       <button on:click={() => navigate('management')}>Management</button>
     {/if}
-    <button on:click={() => navigate('editor')}>Editor</button>
+    {#if state === 'intro'}
+      <button on:click={() => navigate('editor')}>Editor</button>
+    {/if}
   </div>
   <div class="nav-right">
+    {#if gameStarted && state === 'management'}
+      <button on:click={endTurn} class="endTurnBtn">End Turn</button>
+    {/if}
     {#if gameStarted && state !== 'intro'}
       <button on:click={confirmResetGame} style="color:darkorange">Main Menu</button>
     {/if}
@@ -81,6 +107,6 @@
   {:else if state === 'editor'}
     <Editor />
   {:else if state === 'management'}
-    <Management on:turnEnd={onTurnEnd} />
+    <Management bind:this={managementComponent} on:turnEnd={onTurnEnd} />
   {/if}
 </div>
