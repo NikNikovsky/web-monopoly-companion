@@ -38,6 +38,12 @@
     state = 'intro'; // go back to intro to show dice UI for next player
   }
 
+  function confirmResetGame() {
+    if (confirm('Are you sure you want to return to the main menu? This will end your turn.')) {
+      resetGame();
+    }
+  }
+
   function resetGame() {
     gameStarted = false;
     firstRollMade = false;
@@ -46,21 +52,27 @@
 </script>
 
 <style>
-  nav { background:#f3f3f3;padding:12px }
-  nav button { margin-right:12px; cursor:pointer; background:none; border:none; color:blue; text-decoration:underline; padding:0; font:inherit }
+  nav { background:#f3f3f3;padding:12px;display:flex;justify-content:space-between;align-items:center }
+  nav button { cursor:pointer; background:none; border:none; color:blue; text-decoration:underline; padding:0; font:inherit; margin-right:12px }
   nav button:hover { text-decoration-line:underline; color:darkblue }
   nav button:disabled { color:#ccc; cursor:not-allowed; text-decoration:none }
+  nav .nav-left { display:flex }
+  nav .nav-right { display:flex }
   .container { padding:16px; }
 </style>
 
 <nav>
-  {#if state !== 'intro'}
-    <button on:click={() => navigate('management')}>Management</button>
-  {/if}
-  <button on:click={() => navigate('editor')}>Editor</button>
-  {#if gameStarted && state !== 'intro'}
-    <button on:click={resetGame}>Back to Intro</button>
-  {/if}
+  <div class="nav-left">
+    {#if state !== 'intro'}
+      <button on:click={() => navigate('management')}>Management</button>
+    {/if}
+    <button on:click={() => navigate('editor')}>Editor</button>
+  </div>
+  <div class="nav-right">
+    {#if gameStarted && state !== 'intro'}
+      <button on:click={confirmResetGame} style="color:darkorange">Main Menu</button>
+    {/if}
+  </div>
 </nav>
 
 <div class="container">

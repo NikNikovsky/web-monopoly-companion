@@ -5,19 +5,17 @@
   let game = { players: [], currentTurn: 0, ownership: {}, houses: {}, housesBoughtThisTurn: {} };
   let properties = [];
   let actions = [];
+  let playerLogs = [];
   let logfile = '';
   let errorMsg = '';
-  
-  // Dice variables
-  let count = 2, sides = 6;
-  let last = null;
-  let rolls = [];
   
   // Transfers variables
   let fromId = null, toId = null, amount = 0, note = '';
   
   // UI state
-  let activeTab = 'properties'; // 'properties', 'transfers', 'dice'
+  let activeTab = 'properties'; // 'properties', 'transfers', 'log', 'admin'
+  let logView = 'own'; // 'own' or 'all'
+  let logFilter = 'all'; // 'all', 'roll', 'property', 'transfer'
 
   async function loadAll(){
     try {
@@ -26,11 +24,17 @@
       actions = await fetchJSON('/api/actions');
       const lf = await fetch('/api/logfile');
       logfile = lf.ok ? await lf.text() : '';
-      rolls = (await fetchJSON('/api/rolls')).slice().reverse();
       
       if (game.players.length){
         fromId = game.players[0].id;
         toId = game.players[1] ? game.players[1].id : game.players[0].id;
+      }
+      
+      // Load current player logs
+      if (game.players.length) {
+        const currentPlayer = game.players[game.currentTurn];
+        const logs = await fetchJSON(`/api/player-logs/${currentPlayer.id}`);
+        playerLogs = logs.slice().reverse();
       }
     } catch (e) {
       errorMsg = e.message || 'Failed to load data';
@@ -67,17 +71,6 @@
     catch(e){ errorMsg = `Buy hotel failed: ${e.message}`; }
   }
 
-  async function assignProperty(prop){
-    errorMsg = '';
-    const player = game.players[game.currentTurn];
-    const price = parseInt(prompt('Enter price to assign (leave blank to use property value)'), 10);
-    try{ 
-      await postJSON('/api/game/assign-property', { playerId: player.id, propertyName: prop.name, price: isNaN(price) ? undefined : price }); 
-      await loadAll();
-    }
-    catch(e){ errorMsg = `Assign failed: ${e.message}`; }
-  }
-
   async function endTurn(){
     errorMsg = '';
     try {
@@ -90,20 +83,28 @@
   }
 
   async function doRoll(){
-    last = await postJSON('/api/roll', { count, sides });
-    rolls.unshift(last);
+    errorMsg = '';
+    const player = game.players[game.currentTurn];
+    if (!player) return errorMsg = 'No current player';
+    try {
+      const result = await postJSON('/api/roll', { count: 2, sides: 6, playerId: player.id });
+      await loadAll();
+    } catch (e) {
+      errorMsg = `Roll failed: ${e.message}`;
+    }
   }
 
   async function logManual(){
     errorMsg = '';
+    const player = game.players[game.currentTurn];
+    if (!player) return errorMsg = 'No current player';
     const text = prompt('Enter rolls comma separated, e.g. 3,4');
     if (!text) return;
     const arr = text.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
     if (arr.length === 0) { errorMsg = 'Invalid roll input'; return; }
     try {
-      await postJSON('/api/log-roll', { rolls: arr, note: '' });
-      const hist = await fetchJSON('/api/rolls');
-      rolls = hist.slice().reverse();
+      await postJSON('/api/log-roll', { rolls: arr, playerId: player.id, note: '' });
+      await loadAll();
     } catch (e) {
       errorMsg = `Manual roll failed: ${e.message}`;
     }
@@ -131,6 +132,16 @@
     return (game.houses && game.houses[prop.name]) || 0;
   }
 
+  function getFilteredLogs(logs) {
+    return logs.filter(log => {
+      if (logFilter === 'all') return true;
+      if (logFilter === 'roll') return log.type === 'roll';
+      if (logFilter === 'property') return ['buy', 'assign', 'buy-house', 'buy-hotel'].includes(log.type);
+      if (logFilter === 'transfer') return log.type === 'transfer';
+      return true;
+    });
+  }
+
   loadAll();
 </script>
 
@@ -141,13 +152,11 @@
 
 {#if game.players.length}
   <p>Current player: <strong>{game.players[game.currentTurn].name}</strong> (${game.players[game.currentTurn].cash})</p>
-  <button on:click={endTurn}>End Turn</button>
 {/if}
 
 <div style="margin: 16px 0; border-bottom: 2px solid #ddd;">
   <button on:click={() => activeTab = 'properties'} style="padding: 8px 16px; border: none; background: {activeTab === 'properties' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'properties' ? 'white' : 'black'}; cursor: pointer;">Properties</button>
   <button on:click={() => activeTab = 'transfers'} style="padding: 8px 16px; border: none; background: {activeTab === 'transfers' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'transfers' ? 'white' : 'black'}; cursor: pointer;">Transfers</button>
-  <button on:click={() => activeTab = 'dice'} style="padding: 8px 16px; border: none; background: {activeTab === 'dice' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'dice' ? 'white' : 'black'}; cursor: pointer;">Dice</button>
   <button on:click={() => activeTab = 'log'} style="padding: 8px 16px; border: none; background: {activeTab === 'log' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'log' ? 'white' : 'black'}; cursor: pointer;">Logs</button>
 </div>
 
@@ -163,7 +172,6 @@
         <button on:click={() => buyHouse(p)}>Buy House</button>
         <button on:click={() => buyHotel(p)}>Buy Hotel</button>
       {/if}
-      <button on:click={() => assignProperty(p)}>Assign Manually</button>
     </div>
   {/each}
 
@@ -183,31 +191,47 @@
     </div>
   {/if}
 
-{:else if activeTab === 'dice'}
-  <h3>Dice</h3>
-  <label>Count: <input type="number" bind:value={count} min="1" /></label>
-  <label>Sides: <input type="number" bind:value={sides} min="2" /></label>
-  <button on:click={doRoll}>Roll</button>
-  <button on:click={logManual}>Log Manual Roll</button>
-  {#if last}
-    <p><strong>Last: {last.rolls.join(', ')} (sum {last.sum})</strong></p>
-  {/if}
-
-  <h3>Roll History</h3>
-  <ul style="max-height: 200px; overflow-y: auto;">
-    {#each rolls as r}
-      <li>{new Date(r.timestamp).toLocaleString()}: {r.rolls.join(', ')} (sum {r.sum}) {r.note ? '- ' + r.note : ''}</li>
-    {/each}
-  </ul>
-
 {:else if activeTab === 'log'}
-  <h3>Action Log</h3>
+  <h3>Dice Rolls & Actions</h3>
+  <div style="margin-bottom: 12px;">
+    <button on:click={() => { doRoll(); }} style="padding:8px 16px;background:#4caf50;color:white;border:none;cursor:pointer;margin-right:8px">Roll Dice</button>
+    <button on:click={() => { logManual(); }} style="padding:8px 16px;background:#ff9800;color:white;border:none;cursor:pointer;margin-right:8px">Log Manual Roll</button>
+  </div>
+  
+  <h4>{game.players.length ? game.players[game.currentTurn].name + "'s Activity" : 'Activity'}</h4>
+  <div style="margin-bottom: 12px;">
+    <label>Filter: 
+      <select bind:value={logFilter}>
+        <option value="all">All</option>
+        <option value="roll">Dice Rolls</option>
+        <option value="property">Properties</option>
+        <option value="transfer">Transfers</option>
+      </select>
+    </label>
+  </div>
+  
   <ul style="max-height: 300px; overflow-y: auto;">
-    {#each actions.slice().reverse() as a}
-      <li>{new Date(a.timestamp).toLocaleString()}: {a.type} {a.playerName ? '- ' + a.playerName : ''} {a.property ? '- ' + a.property : ''} {a.amount ? '- ' + a.amount : ''}</li>
+    {#each getFilteredLogs(playerLogs) as log}
+      <li>
+        {new Date(log.timestamp).toLocaleString()}: 
+        {#if log.type === 'roll'}
+          <strong>Rolled {log.rolls.join(', ')} (sum {log.sum})</strong>
+        {:else if log.type === 'buy'}
+          Bought {log.property} for ${log.amount}
+        {:else if log.type === 'buy-house'}
+          Bought house on {log.property} for ${log.amount}
+        {:else if log.type === 'buy-hotel'}
+          Bought hotel on {log.property} for ${log.amount}
+        {:else if log.type === 'transfer'}
+          Transfer to/from {log.toName || log.fromName}: ${log.amount} {log.note ? '(' + log.note + ')' : ''}
+        {:else}
+          {log.type}
+        {/if}
+      </li>
     {/each}
   </ul>
-
-  <h3>Raw Log</h3>
-  <pre style="max-height:240px;overflow:auto;background:#111;color:#0f0;padding:10px;border-radius:6px">{logfile}</pre>
 {/if}
+
+<div style="margin-top: 32px; text-align: center;">
+  <button on:click={endTurn} style="padding:12px 24px;background:#e74c3c;color:white;border:none;cursor:pointer;font-weight:bold">End Turn</button>
+</div>

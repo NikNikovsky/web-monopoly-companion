@@ -156,8 +156,8 @@ async function writeRolls(rolls) {
 
 // Note: card/chance/community chest JSON handling removed — use property configs instead.
 
-app.post('/api/roll', (req, res) => {
-  const { count = 2, sides = 6 } = req.body || {};
+app.post('/api/roll', async (req, res) => {
+  const { count = 2, sides = 6, playerId } = req.body || {};
   const c = Math.max(1, Math.min(10, parseInt(count, 10) || 2));
   const s = Math.max(2, Math.min(100, parseInt(sides, 10) || 6));
   const rolls = [];
@@ -165,7 +165,28 @@ app.post('/api/roll', (req, res) => {
     rolls.push(1 + Math.floor(Math.random() * s));
   }
   const sum = rolls.reduce((a, b) => a + b, 0);
-  const result = { rolls, sum, timestamp: new Date().toISOString() };
+  const result = { rolls, sum, timestamp: new Date().toISOString(), playerId };
+  
+  try {
+    // Store roll with player tracking
+    const existing = await readRolls();
+    existing.push(result);
+    await writeRolls(existing);
+    
+    // Also log to actions if playerId provided
+    if (playerId) {
+      const game = await readGame();
+      const player = game.players.find(p => p.id === playerId);
+      const actions = await readActions();
+      const entry = { type: 'roll', playerId, playerName: player ? player.name : 'Unknown', rolls, sum, timestamp: result.timestamp };
+      actions.push(entry);
+      await writeActions(actions);
+      await appendLogLine(`${player ? player.name : 'Unknown'} rolled: ${rolls.join(',')} (sum ${sum})`);
+    }
+  } catch (e) {
+    console.error('Error logging roll:', e);
+  }
+  
   res.json(result);
 });
 
@@ -179,21 +200,29 @@ app.get('/api/rolls', async (req, res) => {
 });
 
 app.post('/api/log-roll', async (req, res) => {
-  const { rolls, note } = req.body || {};
+  const { rolls, note, playerId } = req.body || {};
   if (!Array.isArray(rolls)) return res.status(400).json({ error: 'rolls must be an array' });
   try {
     const existing = await readRolls();
-    const entry = { rolls, sum: rolls.reduce((a, b) => a + b, 0), note: note || '', timestamp: new Date().toISOString() };
+    const sum = rolls.reduce((a, b) => a + b, 0);
+    const entry = { rolls, sum, note: note || '', timestamp: new Date().toISOString(), playerId };
     existing.push(entry);
     await writeRolls(existing);
+    
+    // Log to actions
+    const game = await readGame();
+    const player = playerId ? game.players.find(p => p.id === playerId) : null;
+    const actions = await readActions();
+    const actionEntry = { type: 'roll', playerId, playerName: player ? player.name : 'Unknown', rolls, sum, note: note || '', timestamp: entry.timestamp };
+    actions.push(actionEntry);
+    await writeActions(actions);
+    await appendLogLine(`${player ? player.name : 'Unknown'} rolled manually: ${rolls.join(',')} (sum ${sum})${note ? ' — ' + note : ''}`);
+    
     // mark first roll on game
-    try {
-      const game = await readGame();
-      if (!game.firstRollMade) {
-        game.firstRollMade = true;
-        await writeGame(game);
-      }
-    } catch (e) {}
+    if (!game.firstRollMade) {
+      game.firstRollMade = true;
+      await writeGame(game);
+    }
     res.json({ ok: true, entry });
   } catch (err) {
     res.status(500).json({ error: 'Failed to log roll' });
@@ -607,6 +636,29 @@ app.get('/api/logfile', async (req, res) => {
     res.send(txt);
   } catch (err) {
     res.status(500).json({ error: 'Failed to read log file' });
+  }
+});
+
+// Per-player logs endpoint
+app.get('/api/player-logs/:playerId', async (req, res) => {
+  const playerId = parseInt(req.params.playerId, 10);
+  try {
+    const actions = await readActions();
+    const rolls = await readRolls();
+    
+    // Filter to only this player's actions
+    const playerActions = actions.filter(a => a.playerId === playerId || a.playerName === (await readGame()).players.find(p => p.id === playerId)?.name);
+    const playerRolls = rolls.filter(r => r.playerId === playerId);
+    
+    // Merge and sort by timestamp
+    const combined = [
+      ...playerActions,
+      ...playerRolls.map(r => ({ type: 'roll', playerId, rolls: r.rolls, sum: r.sum, timestamp: r.timestamp }))
+    ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    res.json(combined);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read player logs' });
   }
 });
 

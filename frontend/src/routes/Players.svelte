@@ -263,7 +263,7 @@
 {/if}
 
 {#if rolloffComplete}
-  <h2 style="margin-top:32px">First Roll</h2>
+  <h2 style="margin-top:32px">Roll the Dice</h2>
   <p>Now roll the dice to begin the game.</p>
   <div style="margin-bottom:16px">
     <label>Count: <input type="number" bind:value={diceCount} min="1" /></label>
