@@ -1,25 +1,41 @@
 <script>
   import Players from './routes/Players.svelte';
   import Editor from './routes/Editor.svelte';
-  import Dice from './routes/Dice.svelte';
   import Management from './routes/Management.svelte';
-  import Transfers from './routes/Transfers.svelte';
 
-  let route = 'players';
-  let gameStarted = false; // track if rolloff is complete
+  let state = 'intro'; // 'intro', 'management', 'editor'
+  let gameStarted = false;
+  let firstRollMade = false;
 
-  function navigate(r) {
-    // only allow access to game routes after rolloff
-    if (!gameStarted && ['dice', 'management', 'transfers'].includes(r)) {
-      alert('Complete the rolloff in Players section first');
+  function navigate(s) {
+    // only allow transitions when appropriate
+    if (!gameStarted && ['management'].includes(s)) {
+      alert('Complete the rolloff in intro section first');
       return;
     }
-    route = r;
+    if (gameStarted && !firstRollMade && ['management'].includes(s)) {
+      alert('Roll the dice first to start playing');
+      return;
+    }
+    state = s;
     window.scrollTo(0,0);
   }
 
   function setGameStarted() {
     gameStarted = true;
+    state = 'intro'; // stay in intro, show dice section
+    firstRollMade = false;
+  }
+
+  function setFirstRollMade() {
+    firstRollMade = true;
+    state = 'management'; // auto-navigate to management after first roll
+  }
+
+  function resetGame() {
+    gameStarted = false;
+    firstRollMade = false;
+    state = 'intro';
   }
 </script>
 
@@ -27,27 +43,26 @@
   nav { background:#f3f3f3;padding:12px }
   nav button { margin-right:12px; cursor:pointer; background:none; border:none; color:blue; text-decoration:underline; padding:0; font:inherit }
   nav button:hover { text-decoration-line:underline; color:darkblue }
+  nav button:disabled { color:#ccc; cursor:not-allowed; text-decoration:none }
   .container { padding:16px; }
 </style>
 
 <nav>
-  <button on:click={() => navigate('players')}>Players</button>
-  <button on:click={() => navigate('dice')} disabled={!gameStarted}>Dice</button>
-  <button on:click={() => navigate('management')} disabled={!gameStarted}>Management</button>
-  <button on:click={() => navigate('transfers')} disabled={!gameStarted}>Transfers</button>
+  {#if state !== 'intro'}
+    <button on:click={() => navigate('management')}>Management</button>
+  {/if}
   <button on:click={() => navigate('editor')}>Editor</button>
+  {#if gameStarted && state !== 'intro'}
+    <button on:click={resetGame}>Back to Intro</button>
+  {/if}
 </nav>
 
 <div class="container">
-  {#if route === 'players'}
-    <Players on:gameReady={setGameStarted} />
-  {:else if route === 'editor'}
+  {#if state === 'intro'}
+    <Players on:gameReady={setGameStarted} on:firstRoll={setFirstRollMade} />
+  {:else if state === 'editor'}
     <Editor />
-  {:else if route === 'dice'}
-    <Dice />
-  {:else if route === 'management'}
+  {:else if state === 'management'}
     <Management />
-  {:else if route === 'transfers'}
-    <Transfers />
   {/if}
 </div>

@@ -14,6 +14,8 @@
   let errorMsg = '';
   let gameCreated = false;
   let rolloffComplete = false;
+  let showContinueDialog = false;
+  let existingGame = null;
 
   const loadConfigs = async () => {
     try {
@@ -21,6 +23,48 @@
       if (propertyFiles.length) selectedFile = propertyFiles[0].name;
     } catch (e) {
       errorMsg = 'Failed to load config files';
+    }
+  }
+
+  const checkExistingGame = async () => {
+    try {
+      const g = await fetchJSON('/api/game');
+      if (g && g.players && g.players.length > 0) {
+        existingGame = g;
+        showContinueDialog = true;
+        gameCreated = true;
+        // populate players display but don't mark as rolloff complete yet
+        players = g.players;
+      }
+    } catch (e) {
+      // no existing game, proceed normally
+    }
+  }
+
+  const continueGame = async () => {
+    try {
+      await loadGame();
+      rolloffComplete = true;
+      dispatch('gameReady');
+      showContinueDialog = false;
+    } catch (e) {
+      errorMsg = 'Failed to load saved game';
+    }
+  }
+
+  const startNewGame = async () => {
+    try {
+      // Clear all data on server
+      await postJSON('/api/game/clear', {});
+      showContinueDialog = false;
+      gameCreated = false;
+      rolloffComplete = false;
+      players = [];
+      rollResults = [];
+      existingGame = null;
+      errorMsg = '';
+    } catch (e) {
+      errorMsg = 'Failed to start new game: ' + (e.message || 'unknown error');
     }
   }
 
@@ -78,8 +122,32 @@
     }
   }
 
-  loadConfigs();
-  loadGame();
+  let diceCount = 2, diceSides = 6;
+  let lastRoll = null;
+  let rolls = [];
+
+  const doRoll = async () => {
+    try {
+      const result = await postJSON('/api/roll', { count: diceCount, sides: diceSides });
+      lastRoll = result;
+      await postJSON('/api/game/mark-first-roll', {});
+      dispatch('firstRoll');
+    } catch (e) {
+      errorMsg = 'Roll failed: ' + (e.message || 'unknown error');
+    }
+  }
+
+  const init = async () => {
+    loadConfigs();
+    loadGame();
+    checkExistingGame();
+    try {
+      rolls = (await fetchJSON('/api/rolls')).slice().reverse();
+    } catch (e) {}
+  }
+
+  init();
+
 </script>
 
 <h2>Create Game</h2>
@@ -87,7 +155,14 @@
   <div style="color:red;background:#ffe0e0;padding:10px;border-radius:6px;margin-bottom:12px">{errorMsg}</div>
 {/if}
 
-{#if !gameCreated}
+{#if showContinueDialog && existingGame}
+  <div style="background:#e3f2fd;padding:16px;border-radius:6px;margin-bottom:12px;border:2px solid #2196f3">
+    <h3>Previous Game Found</h3>
+    <p>Players: {existingGame.players.map(p => `${p.name} ($${p.cash})`).join(', ')}</p>
+    <button on:click={continueGame} style="margin-right:8px">Continue Game</button>
+    <button on:click={startNewGame}>Start New Game</button>
+  </div>
+{:else if !gameCreated}
   <label>Players: <input type="number" bind:value={playerCount} min="2" max="8" on:change={() => setCount(playerCount)} /></label>
   <label>Starting cash: <input type="number" bind:value={startingCash} /></label>
   <label>Property set: <select bind:value={selectedFile}>
@@ -126,4 +201,15 @@
       <li>{r.name}: {r.rolls.join(', ')} (sum {r.sum})</li>
     {/each}
   </ul>
+{/if}
+
+{#if rolloffComplete}
+  <h2 style="margin-top:32px">First Roll</h2>
+  <p>Now roll the dice to begin the game.</p>
+  <label>Count: <input type="number" bind:value={diceCount} min="1" /></label>
+  <label>Sides: <input type="number" bind:value={diceSides} min="2" /></label>
+  <button on:click={doRoll} style="font-weight:bold;padding:8px 16px;background:#4caf50;color:white;border:none;cursor:pointer">Roll Dice</button>
+  {#if lastRoll}
+    <p style="font-weight:bold;font-size:1.2em;color:#2196f3">Rolled: {lastRoll.rolls.join(', ')} (sum {lastRoll.sum})</p>
+  {/if}
 {/if}

@@ -186,6 +186,14 @@ app.post('/api/log-roll', async (req, res) => {
     const entry = { rolls, sum: rolls.reduce((a, b) => a + b, 0), note: note || '', timestamp: new Date().toISOString() };
     existing.push(entry);
     await writeRolls(existing);
+    // mark first roll on game
+    try {
+      const game = await readGame();
+      if (!game.firstRollMade) {
+        game.firstRollMade = true;
+        await writeGame(game);
+      }
+    } catch (e) {}
     res.json({ ok: true, entry });
   } catch (err) {
     res.status(500).json({ error: 'Failed to log roll' });
@@ -287,7 +295,7 @@ app.post('/api/game/create', async (req, res) => {
     const ownership = {};
     const houses = {};
     props.forEach(p => { ownership[p.name] = null; houses[p.name] = 0; });
-    const game = { players: players.map((name, idx) => ({ id: idx+1, name, cash: parseInt(startingCash,10) || 1500, properties: [] })), currentTurn: 0, ownership, houses, housesBoughtThisTurn: {} };
+    const game = { players: players.map((name, idx) => ({ id: idx+1, name, cash: parseInt(startingCash,10) || 1500, properties: [] })), currentTurn: 0, ownership, houses, housesBoughtThisTurn: {}, firstRollMade: false };
     if (propertyFile) game.propertyFile = propertyFile;
     await writeGame(game);
     await writeActions([]);
@@ -318,12 +326,38 @@ app.post('/api/game/set-first', async (req, res) => {
   }
 });
 
+app.post('/api/game/clear', async (req, res) => {
+  try {
+    // Clear all data files
+    await fs.writeFile(GAME_FILE, JSON.stringify({ players: [], currentTurn: 0, ownership: {}, houses: {} }, null, 2), 'utf8');
+    await fs.writeFile(ROLLS_FILE, JSON.stringify([], null, 2), 'utf8');
+    await fs.writeFile(ACTIONS_FILE, JSON.stringify([], null, 2), 'utf8');
+    await fs.writeFile(ACTIONS_LOG_FILE, '', 'utf8');
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to clear game data' });
+  }
+});
+
 app.get('/api/game', async (req, res) => {
   try {
     const game = await readGame();
     res.json(game);
   } catch (err) {
     res.status(500).json({ error: 'Failed to read game' });
+  }
+});
+
+app.post('/api/game/mark-first-roll', async (req, res) => {
+  try {
+    const game = await readGame();
+    if (!game.firstRollMade) {
+      game.firstRollMade = true;
+      await writeGame(game);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to mark first roll' });
   }
 });
 
