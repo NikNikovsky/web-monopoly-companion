@@ -259,6 +259,20 @@ function setupPlayerNameInputs() {
   }
 }
 
+async function populatePropertyFileSelect() {
+  const sel = document.getElementById('property-file-select');
+  if (!sel) return;
+  sel.innerHTML = '';
+  try {
+    const list = await fetchJSON('/api/configs');
+    list.forEach(l => {
+      const o = document.createElement('option'); o.value = l.name; o.textContent = l.title || l.name; sel.appendChild(o);
+    });
+  } catch (e) {
+    // fallback: leave blank
+  }
+}
+
 async function endTurn() {
   await fetchJSON('/api/game/end-turn', { method: 'POST' });
   await loadGame();
@@ -353,6 +367,7 @@ function attach() {
 window.addEventListener('DOMContentLoaded', async () => {
   attach();
   setupPlayerNameInputs();
+  await populatePropertyFileSelect();
   await loadGame();
   await loadHistory();
   await loadActions();

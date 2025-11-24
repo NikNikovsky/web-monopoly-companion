@@ -59,4 +59,5 @@ dist
 !.yarn/versions
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-data/
+data/*.json
+data/*.log
