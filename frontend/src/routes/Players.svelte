@@ -16,6 +16,8 @@
   let rolloffComplete = false;
   let showContinueDialog = false;
   let existingGame = null;
+  let rolloffMode = null; // 'auto' or 'manual' or null
+  let manualRollValues = {}; // store manual roll inputs by player id
 
   const loadConfigs = async () => {
     try {
@@ -125,6 +127,41 @@
   let diceCount = 2, diceSides = 6;
   let lastRoll = null;
   let rolls = [];
+  let manualRollInput = null;
+
+  const manualRolloff = async () => {
+    try {
+      const values = Object.values(manualRollValues).filter(v => v != null && v !== '');
+      if (values.length !== players.length) return errorMsg = 'Please enter all player rolls';
+      
+      // Find player with highest roll
+      let maxRoll = Math.max(...values);
+      let playerEntries = players.map((p, idx) => ({ player: p, roll: manualRollValues[p.id] }));
+      let winner = playerEntries.find(e => e.roll == maxRoll)?.player;
+      
+      if (!winner) throw new Error('Could not determine winner');
+      
+      await postJSON('/api/game/set-first', { playerId: winner.id });
+      await loadGame();
+      rolloffComplete = true;
+      rolloffMode = null;
+      dispatch('gameReady');
+    } catch (e) {
+      errorMsg = 'Manual rolloff failed: ' + (e.message || 'unknown error');
+    }
+  }
+
+  const manualFirstRoll = async () => {
+    try {
+      if (!manualRollInput) return errorMsg = 'Please enter a roll value';
+      lastRoll = { rolls: [manualRollInput], sum: manualRollInput, timestamp: new Date().toISOString() };
+      await postJSON('/api/log-roll', { rolls: [manualRollInput], note: 'manual' });
+      await postJSON('/api/game/mark-first-roll', {});
+      dispatch('firstRoll');
+    } catch (e) {
+      errorMsg = 'Manual roll failed: ' + (e.message || 'unknown error');
+    }
+  }
 
   const doRoll = async () => {
     try {
@@ -177,10 +214,32 @@
     {/each}
   </div>
   <button on:click={createGame}>Create</button>
-  <button on:click={doRolloff}>Create + Roll-off</button>
 {:else if !rolloffComplete}
   <p style="font-weight:bold">Game created! Now perform the roll-off to determine the first player.</p>
-  <button on:click={doRolloff} disabled={rolloffComplete}>Perform Roll-off</button>
+  
+  {#if !rolloffMode}
+    <div style="display:flex;gap:12px;margin:16px 0">
+      <button on:click={() => rolloffMode = 'auto'} style="padding:8px 16px;background:#2196f3;color:white;border:none;cursor:pointer">Perform Rolloff (Automated)</button>
+      <button on:click={() => rolloffMode = 'manual'} style="padding:8px 16px;background:#ff9800;color:white;border:none;cursor:pointer">Manual Rolloff</button>
+    </div>
+  {:else if rolloffMode === 'auto'}
+    <div style="margin:16px 0">
+      <p>Rolling dice for each player...</p>
+      <button on:click={doRolloff} style="padding:8px 16px;background:#4caf50;color:white;border:none;cursor:pointer;margin-right:8px">Roll Now</button>
+      <button on:click={() => rolloffMode = null} style="padding:8px 16px;background:#999;color:white;border:none;cursor:pointer">Cancel</button>
+    </div>
+  {:else if rolloffMode === 'manual'}
+    <div style="margin:16px 0">
+      <p><small>Enter each player's rolloff total. Highest number becomes first player.</small></p>
+      <div style="display:grid;gap:8px;margin-bottom:12px">
+        {#each players as p}
+          <label>{p.name} roll total: <input type="number" bind:value={manualRollValues[p.id]} placeholder="Enter roll sum" /></label>
+        {/each}
+      </div>
+      <button on:click={manualRolloff} style="padding:8px 16px;background:#4caf50;color:white;border:none;cursor:pointer;margin-right:8px">Submit Rolloff</button>
+      <button on:click={() => { rolloffMode = null; manualRollValues = {}; }} style="padding:8px 16px;background:#999;color:white;border:none;cursor:pointer">Cancel</button>
+    </div>
+  {/if}
 {:else}
   <p style="color:green;font-weight:bold">✓ First player selected! Go to <strong>Dice</strong>, <strong>Management</strong>, or <strong>Transfers</strong> to play.</p>
 {/if}
@@ -206,9 +265,16 @@
 {#if rolloffComplete}
   <h2 style="margin-top:32px">First Roll</h2>
   <p>Now roll the dice to begin the game.</p>
-  <label>Count: <input type="number" bind:value={diceCount} min="1" /></label>
-  <label>Sides: <input type="number" bind:value={diceSides} min="2" /></label>
-  <button on:click={doRoll} style="font-weight:bold;padding:8px 16px;background:#4caf50;color:white;border:none;cursor:pointer">Roll Dice</button>
+  <div style="margin-bottom:16px">
+    <label>Count: <input type="number" bind:value={diceCount} min="1" /></label>
+    <label>Sides: <input type="number" bind:value={diceSides} min="2" /></label>
+    <button on:click={doRoll} style="font-weight:bold;padding:8px 16px;background:#4caf50;color:white;border:none;cursor:pointer">Roll Dice</button>
+  </div>
+  
+  <h3>Or enter manual roll:</h3>
+  <label>Roll total: <input type="number" bind:value={manualRollInput} placeholder="Enter roll sum" /></label>
+  <button on:click={manualFirstRoll} style="background:#ff9800;color:white;border:none;padding:8px 8px;cursor:pointer">Roll Manually</button>
+  
   {#if lastRoll}
     <p style="font-weight:bold;font-size:1.2em;color:#2196f3">Rolled: {lastRoll.rolls.join(', ')} (sum {lastRoll.sum})</p>
   {/if}

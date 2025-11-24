@@ -1,5 +1,7 @@
 <script>
+  import { createEventDispatcher } from 'svelte';
   import { fetchJSON, postJSON } from '../lib/api.js';
+  const dispatch = createEventDispatcher();
   let game = { players: [], currentTurn: 0, ownership: {}, houses: {}, housesBoughtThisTurn: {} };
   let properties = [];
   let actions = [];
@@ -81,6 +83,7 @@
     try {
       await postJSON('/api/game/end-turn', {});
       await loadAll();
+      dispatch('turnEnd');
     } catch (e) {
       errorMsg = `End turn failed: ${e.message}`;
     }
@@ -92,12 +95,18 @@
   }
 
   async function logManual(){
+    errorMsg = '';
     const text = prompt('Enter rolls comma separated, e.g. 3,4');
     if (!text) return;
     const arr = text.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
-    await postJSON('/api/log-roll', { rolls: arr, note: '' });
-    const hist = await fetchJSON('/api/rolls');
-    rolls = hist.slice().reverse();
+    if (arr.length === 0) { errorMsg = 'Invalid roll input'; return; }
+    try {
+      await postJSON('/api/log-roll', { rolls: arr, note: '' });
+      const hist = await fetchJSON('/api/rolls');
+      rolls = hist.slice().reverse();
+    } catch (e) {
+      errorMsg = `Manual roll failed: ${e.message}`;
+    }
   }
 
   async function doTransfer(){

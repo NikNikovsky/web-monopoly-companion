@@ -32,6 +32,12 @@
     state = 'management'; // auto-navigate to management after first roll
   }
 
+  function onTurnEnd() {
+    // When turn ends, reset roll state so next player must roll
+    firstRollMade = false;
+    state = 'intro'; // go back to intro to show dice UI for next player
+  }
+
   function resetGame() {
     gameStarted = false;
     firstRollMade = false;
@@ -63,6 +69,6 @@
   {:else if state === 'editor'}
     <Editor />
   {:else if state === 'management'}
-    <Management />
+    <Management on:turnEnd={onTurnEnd} />
   {/if}
 </div>
