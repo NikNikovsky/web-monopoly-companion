@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Transfers - Monopoly Companion</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1>Transfers & Action Log</h1>
+      <p><a href="/game.html">Back to Game Hub</a></p>
+
+      <section class="transfers">
+        <h2>Transfer Money</h2>
+        <label>From: <select id="transfer-from"></select></label>
+        <label>To: <select id="transfer-to"></select></label>
+        <label>Amount: <input id="transfer-amount" type="number" value="0"></label>
+        <input id="transfer-note" placeholder="Optional note" />
+        <button id="do-transfer">Transfer</button>
+      </section>
+
+      <section class="actions">
+        <h2>Action Log</h2>
+        <ul id="action-log"></ul>
+        <div class="raw-log">
+          <button id="refresh-log">Refresh Raw Log</button>
+          <pre id="actions-logfile" style="max-height:240px;overflow:auto;background:#111;color:#0f0;padding:10px;border-radius:6px"></pre>
+        </div>
+      </section>
+
+    </div>
+    <script src="/game.js"></script>
+  </body>
+</html>

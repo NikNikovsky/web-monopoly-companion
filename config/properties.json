@@ -1,0 +1,142 @@
+[
+  {
+    "name": "Mediterranean Avenue",
+    "value": 60,
+    "color": "Brown"
+  },
+  {
+    "name": "Baltic Avenue",
+    "value": 60,
+    "color": "Brown"
+  },
+  {
+    "name": "Oriental Avenue",
+    "value": 100,
+    "color": "Light Blue"
+  },
+  {
+    "name": "Vermont Avenue",
+    "value": 100,
+    "color": "Light Blue"
+  },
+  {
+    "name": "Connecticut Avenue",
+    "value": 120,
+    "color": "Light Blue"
+  },
+  {
+    "name": "St. Charles Place",
+    "value": 140,
+    "color": "Pink"
+  },
+  {
+    "name": "States Avenue",
+    "value": 140,
+    "color": "Pink"
+  },
+  {
+    "name": "Virginia Avenue",
+    "value": 160,
+    "color": "Pink"
+  },
+  {
+    "name": "St. James Place",
+    "value": 180,
+    "color": "Orange"
+  },
+  {
+    "name": "Tennessee Avenue",
+    "value": 180,
+    "color": "Orange"
+  },
+  {
+    "name": "New York Avenue",
+    "value": 200,
+    "color": "Orange"
+  },
+  {
+    "name": "Kentucky Avenue",
+    "value": 220,
+    "color": "Red"
+  },
+  {
+    "name": "Indiana Avenue",
+    "value": 220,
+    "color": "Red"
+  },
+  {
+    "name": "Illinois Avenue",
+    "value": 240,
+    "color": "Red"
+  },
+  {
+    "name": "Atlantic Avenue",
+    "value": 260,
+    "color": "Yellow"
+  },
+  {
+    "name": "Ventnor Avenue",
+    "value": 260,
+    "color": "Yellow"
+  },
+  {
+    "name": "Marvin Gardens",
+    "value": 280,
+    "color": "Yellow"
+  },
+  {
+    "name": "Pacific Avenue",
+    "value": 300,
+    "color": "Green"
+  },
+  {
+    "name": "North Carolina Avenue",
+    "value": 300,
+    "color": "Green"
+  },
+  {
+    "name": "Pennsylvania Avenue",
+    "value": 320,
+    "color": "Green"
+  },
+  {
+    "name": "Park Place",
+    "value": 350,
+    "color": "Dark Blue"
+  },
+  {
+    "name": "Boardwalk",
+    "value": 400,
+    "color": "Dark Blue"
+  },
+  {
+    "name": "Reading Railroad",
+    "value": 200,
+    "color": "Railroad"
+  },
+  {
+    "name": "Pennsylvania Railroad",
+    "value": 200,
+    "color": "Railroad"
+  },
+  {
+    "name": "B. & O. Railroad",
+    "value": 200,
+    "color": "Railroad"
+  },
+  {
+    "name": "Short Line",
+    "value": 200,
+    "color": "Railroad"
+  },
+  {
+    "name": "Electric Company",
+    "value": 150,
+    "color": "Utility"
+  },
+  {
+    "name": "Water Works",
+    "value": 150,
+    "color": "Utility"
+  }
+]
