@@ -1,50 +1,72 @@
 <script>
   import { fetchJSON, postJSON } from '../lib/api.js';
-  let game = { players: [], currentTurn: 0, ownership: {}, houses: {} };
+  let game = { players: [], currentTurn: 0, ownership: {}, houses: {}, housesBoughtThisTurn: {} };
   let properties = [];
   let actions = [];
   let logfile = '';
+  let errorMsg = '';
 
   async function loadAll(){
-    game = await fetchJSON('/api/game');
-    properties = await fetchJSON('/api/properties');
-    actions = await fetchJSON('/api/actions');
-    const lf = await fetch('/api/logfile');
-    logfile = lf.ok ? await lf.text() : '';
+    try {
+      game = await fetchJSON('/api/game');
+      properties = await fetchJSON('/api/properties');
+      actions = await fetchJSON('/api/actions');
+      const lf = await fetch('/api/logfile');
+      logfile = lf.ok ? await lf.text() : '';
+    } catch (e) {
+      errorMsg = e.message || 'Failed to load data';
+    }
   }
 
   async function buy(prop){
+    errorMsg = '';
     const player = game.players[game.currentTurn];
-    if (!player) return alert('No current player');
+    if (!player) return errorMsg = 'No current player';
     try{
       await postJSON('/api/game/buy', { playerId: player.id, propertyName: prop.name });
       await loadAll();
-      alert('Bought ' + prop.name);
-    }catch(e){ alert('Buy failed: ' + e.message); }
+    }catch(e){ errorMsg = `Buy failed: ${e.message}`; }
   }
 
   async function buyHouse(prop){
+    errorMsg = '';
     const player = game.players[game.currentTurn];
-    try{ await postJSON('/api/game/buy-house', { playerId: player.id, propertyName: prop.name }); await loadAll(); alert('House purchased'); }
-    catch(e){ alert('Buy house failed: ' + e.message); }
+    try{ 
+      await postJSON('/api/game/buy-house', { playerId: player.id, propertyName: prop.name }); 
+      await loadAll();
+    }
+    catch(e){ errorMsg = `Buy house failed: ${e.message}`; }
   }
 
   async function buyHotel(prop){
+    errorMsg = '';
     const player = game.players[game.currentTurn];
-    try{ await postJSON('/api/game/buy-hotel', { playerId: player.id, propertyName: prop.name }); await loadAll(); alert('Hotel purchased'); }
-    catch(e){ alert('Buy hotel failed: ' + e.message); }
+    try{ 
+      await postJSON('/api/game/buy-hotel', { playerId: player.id, propertyName: prop.name }); 
+      await loadAll();
+    }
+    catch(e){ errorMsg = `Buy hotel failed: ${e.message}`; }
   }
 
   async function assignProperty(prop){
+    errorMsg = '';
     const player = game.players[game.currentTurn];
     const price = parseInt(prompt('Enter price to assign (leave blank to use property value)'), 10);
-    try{ await postJSON('/api/game/assign-property', { playerId: player.id, propertyName: prop.name, price: isNaN(price) ? undefined : price }); await loadAll(); alert('Assigned'); }
-    catch(e){ alert('Assign failed: ' + e.message); }
+    try{ 
+      await postJSON('/api/game/assign-property', { playerId: player.id, propertyName: prop.name, price: isNaN(price) ? undefined : price }); 
+      await loadAll();
+    }
+    catch(e){ errorMsg = `Assign failed: ${e.message}`; }
   }
 
   async function endTurn(){
-    await postJSON('/api/game/end-turn', {});
-    await loadAll();
+    errorMsg = '';
+    try {
+      await postJSON('/api/game/end-turn', {});
+      await loadAll();
+    } catch (e) {
+      errorMsg = `End turn failed: ${e.message}`;
+    }
   }
 
   // helpers
@@ -63,8 +85,11 @@
 </script>
 
 <h2>Management</h2>
+{#if errorMsg}
+  <div style="color:red;background:#ffe0e0;padding:10px;border-radius:6px;margin-bottom:12px">{errorMsg}</div>
+{/if}
 {#if game.players.length}
-  <p>Current player: {game.players[game.currentTurn].name}</p>
+  <p>Current player: <strong>{game.players[game.currentTurn].name}</strong> (${game.players[game.currentTurn].cash})</p>
   <button on:click={endTurn}>End Turn</button>
 {/if}
 

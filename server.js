@@ -7,7 +7,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const CONFIG_DIR = path.join(__dirname, 'config');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'cards.json');
 const PROPERTIES_FILE = path.join(CONFIG_DIR, 'properties.json');
 const DATA_DIR = path.join(__dirname, 'data');
 const ROLLS_FILE = path.join(DATA_DIR, 'rolls.json');
@@ -19,23 +18,6 @@ async function ensureFiles() {
   try {
     await fs.mkdir(CONFIG_DIR, { recursive: true });
     await fs.mkdir(DATA_DIR, { recursive: true });
-    try {
-      await fs.access(CONFIG_FILE);
-    } catch (e) {
-      const defaultCards = {
-        "chance": [
-          "Advance to Go",
-          "Go to Jail",
-          "Bank pays you dividend"
-        ],
-        "communityChest": [
-          "Doctor's fees",
-          "From sale of stock",
-          "Pay school fees"
-        ]
-      };
-      await fs.writeFile(CONFIG_FILE, JSON.stringify(defaultCards, null, 2), 'utf8');
-    }
     try {
       await fs.access(PROPERTIES_FILE);
     } catch (e) {
@@ -163,15 +145,6 @@ async function appendLogLine(line) {
   await fs.appendFile(ACTIONS_LOG_FILE, l, 'utf8');
 }
 
-async function readCards() {
-  const raw = await fs.readFile(CONFIG_FILE, 'utf8');
-  return JSON.parse(raw);
-}
-
-async function writeCards(cardsObj) {
-  await fs.writeFile(CONFIG_FILE, JSON.stringify(cardsObj, null, 2), 'utf8');
-}
-
 async function readRolls() {
   const raw = await fs.readFile(ROLLS_FILE, 'utf8');
   return JSON.parse(raw);
@@ -181,25 +154,7 @@ async function writeRolls(rolls) {
   await fs.writeFile(ROLLS_FILE, JSON.stringify(rolls, null, 2), 'utf8');
 }
 
-app.get('/api/cards', async (req, res) => {
-  try {
-    const cards = await readCards();
-    res.json(cards);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to read cards' });
-  }
-});
-
-app.post('/api/cards', async (req, res) => {
-  const body = req.body;
-  if (!body || typeof body !== 'object') return res.status(400).json({ error: 'Invalid body' });
-  try {
-    await writeCards(body);
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to write cards' });
-  }
-});
+// Note: card/chance/community chest JSON handling removed — use property configs instead.
 
 app.post('/api/roll', (req, res) => {
   const { count = 2, sides = 6 } = req.body || {};
@@ -332,7 +287,7 @@ app.post('/api/game/create', async (req, res) => {
     const ownership = {};
     const houses = {};
     props.forEach(p => { ownership[p.name] = null; houses[p.name] = 0; });
-    const game = { players: players.map((name, idx) => ({ id: idx+1, name, cash: parseInt(startingCash,10) || 1500, properties: [] })), currentTurn: 0, ownership, houses };
+    const game = { players: players.map((name, idx) => ({ id: idx+1, name, cash: parseInt(startingCash,10) || 1500, properties: [] })), currentTurn: 0, ownership, houses, housesBoughtThisTurn: {} };
     if (propertyFile) game.propertyFile = propertyFile;
     await writeGame(game);
     await writeActions([]);
@@ -377,12 +332,22 @@ app.post('/api/game/buy', async (req, res) => {
   if (!playerId || !propertyName) return res.status(400).json({ error: 'playerId and propertyName required' });
   try {
     const game = await readGame();
-    const props = await readProperties();
+    let props = await readProperties();
+    if (game.propertyFile) {
+      try {
+        const cfg = await readConfigFile(game.propertyFile);
+        props = Array.isArray(cfg) ? cfg : (cfg.properties || []);
+      } catch (e) {}
+    }
     const prop = props.find(p => p.name === propertyName);
     if (!prop) return res.status(404).json({ error: 'Property not found' });
     if (game.ownership[propertyName]) return res.status(400).json({ error: 'Property already owned' });
     const player = game.players.find(p => p.id === playerId);
     if (!player) return res.status(404).json({ error: 'Player not found' });
+    // enforce one house purchase per player per turn
+    game.housesBoughtThisTurn = game.housesBoughtThisTurn || {};
+    const alreadyBought = game.housesBoughtThisTurn[playerId] || 0;
+    if (alreadyBought >= 1) return res.status(400).json({ error: 'Only one house purchase allowed per turn' });
     if (player.cash < prop.value) return res.status(400).json({ error: 'Insufficient funds' });
     player.cash -= prop.value;
     player.properties.push(propertyName);
@@ -405,7 +370,13 @@ app.post('/api/game/buy-house', async (req, res) => {
   if (!playerId || !propertyName) return res.status(400).json({ error: 'playerId and propertyName required' });
   try {
     const game = await readGame();
-    const props = await readProperties();
+    let props = await readProperties();
+    if (game.propertyFile) {
+      try {
+        const cfg = await readConfigFile(game.propertyFile);
+        props = Array.isArray(cfg) ? cfg : (cfg.properties || []);
+      } catch (e) {}
+    }
     const prop = props.find(p => p.name === propertyName);
     if (!prop) return res.status(404).json({ error: 'Property not found' });
     if (game.ownership[propertyName] !== playerId) return res.status(400).json({ error: 'Property not owned by player' });
@@ -425,6 +396,7 @@ app.post('/api/game/buy-house', async (req, res) => {
       if (player.cash < houseCost) return res.status(400).json({ error: 'Insufficient funds' });
       player.cash -= houseCost;
       game.houses[propertyName] = current + 1;
+      game.housesBoughtThisTurn[playerId] = (game.housesBoughtThisTurn[playerId] || 0) + 1;
     } else {
       // single-property color groups (rare) - allow building normally
       const current = game.houses[propertyName] || 0;
@@ -432,6 +404,7 @@ app.post('/api/game/buy-house', async (req, res) => {
       if (player.cash < houseCost) return res.status(400).json({ error: 'Insufficient funds' });
       player.cash -= houseCost;
       game.houses[propertyName] = current + 1;
+      game.housesBoughtThisTurn[playerId] = (game.housesBoughtThisTurn[playerId] || 0) + 1;
     }
     await writeGame(game);
     const actions = await readActions();
@@ -451,7 +424,13 @@ app.post('/api/game/buy-hotel', async (req, res) => {
   if (!playerId || !propertyName) return res.status(400).json({ error: 'playerId and propertyName required' });
   try {
     const game = await readGame();
-    const props = await readProperties();
+    let props = await readProperties();
+    if (game.propertyFile) {
+      try {
+        const cfg = await readConfigFile(game.propertyFile);
+        props = Array.isArray(cfg) ? cfg : (cfg.properties || []);
+      } catch (e) {}
+    }
     const prop = props.find(p => p.name === propertyName);
     if (!prop) return res.status(404).json({ error: 'Property not found' });
     if (game.ownership[propertyName] !== playerId) return res.status(400).json({ error: 'Property not owned by player' });
@@ -488,6 +467,8 @@ app.post('/api/game/end-turn', async (req, res) => {
   try {
     const game = await readGame();
     game.currentTurn = (game.currentTurn + 1) % (game.players.length || 1);
+    // reset per-turn house purchase tracking for new turn
+    game.housesBoughtThisTurn = {};
     await writeGame(game);
     const actions = await readActions();
     const entry = { type: 'end-turn', playerId: game.players[game.currentTurn].id, playerName: game.players[game.currentTurn].name, timestamp: new Date().toISOString() };
@@ -530,7 +511,13 @@ app.post('/api/game/assign-property', async (req, res) => {
   if (!playerId || !propertyName) return res.status(400).json({ error: 'playerId and propertyName required' });
   try {
     const game = await readGame();
-    const props = await readProperties();
+    let props = await readProperties();
+    if (game.propertyFile) {
+      try {
+        const cfg = await readConfigFile(game.propertyFile);
+        props = Array.isArray(cfg) ? cfg : (cfg.properties || []);
+      } catch (e) {}
+    }
     const prop = props.find(p => p.name === propertyName);
     if (!prop) return res.status(404).json({ error: 'Property not found' });
     if (game.ownership[propertyName]) return res.status(400).json({ error: 'Property already owned' });

@@ -1,6 +1,6 @@
 # web-monopoly-companion
 
-Minimal web-based Monopoly companion: roll dice, log manual rolls, and edit card names via `config/cards.json`.
+Minimal web-based Monopoly companion: roll dice, log manual rolls, and edit property and card names via the `config/` JSON files.
 
 Quick start
 ```
@@ -10,7 +10,7 @@ npm start
 ```
 
 Data & config
-- `config/cards.json`: editable card names (Chance and Community Chest arrays).
+- `config/properties.json`: property cards and values used by the game (editable via UI or directly).
 - `data/rolls.json`: stored manual roll history (appends when you log manual rolls).
 
 New features
