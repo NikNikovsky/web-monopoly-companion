@@ -42,7 +42,31 @@
 
   async function enterGame() {
     if (!hasRolled) return errorMsg = 'Please roll the dice first';
-    dispatch('rollDone');
+    
+    try {
+      errorMsg = '';
+      const player = game.players[game.currentTurn];
+      const diceSum = dice1 + dice2;
+      
+      console.log('Moving player:', { playerId: player.id, diceSum });
+      
+      // Move the player
+      const moveResult = await postJSON('/api/game/move', { 
+        playerId: player.id, 
+        diceSum 
+      });
+      
+      console.log('Move result:', moveResult);
+      
+      if (moveResult.ok) {
+        dispatch('rollDone');
+      } else {
+        errorMsg = 'Failed to move player: ' + (moveResult.error || 'unknown error');
+      }
+    } catch (e) {
+      console.error('Enter game error:', e);
+      errorMsg = 'Error: ' + e.message;
+    }
   }
 
   loadGame();

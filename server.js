@@ -23,7 +23,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const CONFIG_DIR = path.join(__dirname, 'config');
-const PROPERTIES_FILE = path.join(CONFIG_DIR, 'properties.json');
+const PROPERTIES_DIR = path.join(CONFIG_DIR, 'properties');
+const CARDS_DIR = path.join(CONFIG_DIR, 'cards');
+const DEFAULT_PROPERTIES_FILE = path.join(PROPERTIES_DIR, 'classic.json');
+const DEFAULT_CARDS_FILE = path.join(CARDS_DIR, 'standard.json');
 const DATA_DIR = path.join(__dirname, 'data');
 const ROLLS_FILE = path.join(DATA_DIR, 'rolls.json');
 const ACTIONS_FILE = path.join(DATA_DIR, 'actions.json');
@@ -33,9 +36,11 @@ const GAME_FILE = path.join(DATA_DIR, 'game.json');
 async function ensureFiles() {
   try {
     await fs.mkdir(CONFIG_DIR, { recursive: true });
+    await fs.mkdir(PROPERTIES_DIR, { recursive: true });
+    await fs.mkdir(CARDS_DIR, { recursive: true });
     await fs.mkdir(DATA_DIR, { recursive: true });
     try {
-      await fs.access(PROPERTIES_FILE);
+      await fs.access(DEFAULT_PROPERTIES_FILE);
     } catch (e) {
       const defaultProperties = [
         { "name": "Mediterranean Avenue", "value": 60, "color": "Brown" },
@@ -61,7 +66,7 @@ async function ensureFiles() {
         { "name": "Park Place", "value": 350, "color": "Dark Blue" },
         { "name": "Boardwalk", "value": 400, "color": "Dark Blue" }
       ];
-      await fs.writeFile(PROPERTIES_FILE, JSON.stringify(defaultProperties, null, 2), 'utf8');
+      await fs.writeFile(DEFAULT_PROPERTIES_FILE, JSON.stringify(defaultProperties, null, 2), 'utf8');
     }
     try {
       await fs.access(ROLLS_FILE);
@@ -91,7 +96,7 @@ async function ensureFiles() {
 }
 
 async function readProperties() {
-  const raw = await fs.readFile(PROPERTIES_FILE, 'utf8');
+  const raw = await fs.readFile(DEFAULT_PROPERTIES_FILE, 'utf8');
   const parsed = JSON.parse(raw);
   // support legacy array or object with { title, properties }
   if (Array.isArray(parsed)) return parsed;
@@ -101,33 +106,91 @@ async function readProperties() {
 
 async function writeProperties(props) {
   // write as plain array for backward compatibility
-  await fs.writeFile(PROPERTIES_FILE, JSON.stringify(props, null, 2), 'utf8');
+  await fs.writeFile(DEFAULT_PROPERTIES_FILE, JSON.stringify(props, null, 2), 'utf8');
 }
 
 async function listConfigFiles() {
-  const files = await fs.readdir(CONFIG_DIR);
-  const out = [];
-  for (const f of files) {
-    if (!f.endsWith('.json')) continue;
-    try {
-      const raw = await fs.readFile(path.join(CONFIG_DIR, f), 'utf8');
-      const parsed = JSON.parse(raw);
-      let title = f;
-      if (parsed && typeof parsed === 'object') {
-        if (parsed.title) title = parsed.title;
-        else if (parsed.name) title = parsed.name;
+  const out = { properties: [], cards: [] };
+  
+  // List property config files
+  try {
+    const propFiles = await fs.readdir(PROPERTIES_DIR);
+    for (const f of propFiles) {
+      if (!f.endsWith('.json')) continue;
+      try {
+        const raw = await fs.readFile(path.join(PROPERTIES_DIR, f), 'utf8');
+        const parsed = JSON.parse(raw);
+        let title = f;
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.title) title = parsed.title;
+          else if (parsed.name) title = parsed.name;
+        }
+        out.properties.push({ name: f, title });
+      } catch (e) {
+        // skip unreadable files
       }
-      out.push({ name: f, title });
-    } catch (e) {
-      // skip unreadable files
     }
+  } catch (e) {
+    // skip if dir doesn't exist
   }
+  
+  // List card config files
+  try {
+    const cardFiles = await fs.readdir(CARDS_DIR);
+    for (const f of cardFiles) {
+      if (!f.endsWith('.json')) continue;
+      try {
+        const raw = await fs.readFile(path.join(CARDS_DIR, f), 'utf8');
+        const parsed = JSON.parse(raw);
+        let title = f;
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.title) title = parsed.title;
+          else if (parsed.name) title = parsed.name;
+        }
+        out.cards.push({ name: f, title });
+      } catch (e) {
+        // skip unreadable files
+      }
+    }
+  } catch (e) {
+    // skip if dir doesn't exist
+  }
+  
   return out;
 }
 
 async function readConfigFile(filename) {
   const safe = path.basename(filename);
-  const p = path.join(CONFIG_DIR, safe);
+  // Try properties folder first
+  try {
+    const p = path.join(PROPERTIES_DIR, safe);
+    const raw = await fs.readFile(p, 'utf8');
+    return JSON.parse(raw);
+  } catch (e) {
+    // Fall back to cards folder
+    try {
+      const p = path.join(CARDS_DIR, safe);
+      const raw = await fs.readFile(p, 'utf8');
+      return JSON.parse(raw);
+    } catch (e2) {
+      // Fall back to legacy config dir for backwards compatibility
+      const p = path.join(CONFIG_DIR, safe);
+      const raw = await fs.readFile(p, 'utf8');
+      return JSON.parse(raw);
+    }
+  }
+}
+
+async function readPropertiesFile(filename) {
+  const safe = path.basename(filename);
+  const p = path.join(PROPERTIES_DIR, safe);
+  const raw = await fs.readFile(p, 'utf8');
+  return JSON.parse(raw);
+}
+
+async function readCardsFile(filename) {
+  const safe = path.basename(filename);
+  const p = path.join(CARDS_DIR, safe);
   const raw = await fs.readFile(p, 'utf8');
   return JSON.parse(raw);
 }
@@ -245,6 +308,55 @@ app.post('/api/log-roll', async (req, res) => {
   }
 });
 
+// Move player based on dice roll
+app.post('/api/game/move', async (req, res) => {
+  const { playerId, diceSum } = req.body || {};
+  if (!playerId || diceSum === undefined) {
+    return res.status(400).json({ error: 'playerId and diceSum required' });
+  }
+  
+  try {
+    const game = await readGame();
+    const player = game.players.find(p => p.id === playerId);
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+    
+    // Calculate new position (0-39 for standard board)
+    const boardSize = 40; // standard Monopoly board
+    const oldPosition = player.position || 0;
+    const newPosition = (oldPosition + diceSum) % boardSize;
+    
+    // Check if passed GO
+    let passedGo = false;
+    if (oldPosition + diceSum >= boardSize) {
+      passedGo = true;
+    }
+    
+    player.position = newPosition;
+    await writeGame(game);
+    
+    // Log the move
+    const actions = await readActions();
+    const entry = {
+      type: 'move',
+      playerId,
+      playerName: player.name,
+      diceSum,
+      oldPosition,
+      newPosition,
+      passedGo,
+      timestamp: new Date().toISOString()
+    };
+    actions.push(entry);
+    await writeActions(actions);
+    await appendLogLine(`${player.name} moved ${diceSum} spaces from ${oldPosition} to ${newPosition}${passedGo ? ' (passed GO)' : ''}`);
+    
+    res.json({ ok: true, player, move: entry });
+  } catch (err) {
+    console.error('Move error:', err);
+    res.status(500).json({ error: 'Failed to move player' });
+  }
+});
+
 // Properties endpoints (editable property cards with values)
 app.get('/api/properties', async (req, res) => {
   try {
@@ -274,8 +386,7 @@ app.get('/api/properties', async (req, res) => {
 
 app.get('/api/cards', async (req, res) => {
   try {
-    const cardsFile = path.join(CONFIG_DIR, 'cards.json');
-    const data = fs.readFileSync(cardsFile, 'utf-8');
+    const data = await fs.readFile(DEFAULT_CARDS_FILE, 'utf-8');
     const cardsData = JSON.parse(data);
     res.json(cardsData.cards || []);
   } catch (err) {
@@ -290,6 +401,57 @@ app.get('/api/configs', async (req, res) => {
     res.json(list);
   } catch (err) {
     res.status(500).json({ error: 'Failed to list config files' });
+  }
+});
+
+app.get('/api/config-folders', async (req, res) => {
+  try {
+    const folders = {};
+    const configNames = {
+      'properties': 'Property Cards',
+      'cards': 'Chance/Chest Cards'
+    };
+    
+    // Scan each folder in config dir
+    try {
+      const dirs = await fs.readdir(CONFIG_DIR, { withFileTypes: true });
+      for (const dir of dirs) {
+        if (!dir.isDirectory()) continue;
+        const folderName = dir.name;
+        const displayName = configNames[folderName] || folderName;
+        const folderPath = path.join(CONFIG_DIR, folderName);
+        
+        const files = [];
+        try {
+          const jsonFiles = await fs.readdir(folderPath);
+          for (const f of jsonFiles) {
+            if (!f.endsWith('.json')) continue;
+            try {
+              const raw = await fs.readFile(path.join(folderPath, f), 'utf8');
+              const parsed = JSON.parse(raw);
+              let title = f;
+              if (parsed && typeof parsed === 'object') {
+                if (parsed.title) title = parsed.title;
+                else if (parsed.name) title = parsed.name;
+              }
+              files.push({ name: f, title, folder: folderName });
+            } catch (e) {
+              // skip unreadable files
+            }
+          }
+        } catch (e) {
+          // skip if dir not readable
+        }
+        
+        folders[folderName] = { displayName, files };
+      }
+    } catch (e) {
+      // skip if config dir not readable
+    }
+    
+    res.json(folders);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to list config folders' });
   }
 });
 
@@ -351,7 +513,7 @@ app.post('/api/game/create', async (req, res) => {
     const ownership = {};
     const houses = {};
     props.forEach(p => { ownership[p.name] = null; houses[p.name] = 0; });
-    const game = { players: players.map((name, idx) => ({ id: idx+1, name, cash: parseInt(startingCash,10) || 1500, properties: [] })), currentTurn: 0, ownership, houses, housesBoughtThisTurn: {}, propertiesBoughtThisTurn: {}, firstRollMade: false };
+    const game = { players: players.map((name, idx) => ({ id: idx+1, name, cash: parseInt(startingCash,10) || 1500, properties: [], position: 0 })), currentTurn: 0, ownership, houses, housesBoughtThisTurn: {}, propertiesBoughtThisTurn: {}, firstRollMade: false };
     if (propertyFile) game.propertyFile = propertyFile;
     await writeGame(game);
     await writeActions([]);

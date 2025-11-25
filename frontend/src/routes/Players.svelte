@@ -4,6 +4,7 @@
 
   const dispatch = createEventDispatcher();
 
+  let activeTab = 'number'; // 'number', 'players', 'cash', 'properties', 'cardfile', 'create'
   let playerCount = 2;
   let startingCash = 1500;
   let names = ['',''];
@@ -11,6 +12,8 @@
   let players = [];
   let propertyFiles = [];
   let selectedFile = '';
+  let cardFiles = [];
+  let selectedCardFile = '';
   let errorMsg = '';
   let gameCreated = false;
   let rolloffComplete = false;
@@ -23,8 +26,11 @@
 
   const loadConfigs = async () => {
     try {
-      propertyFiles = await fetchJSON('/api/configs');
+      const result = await fetchJSON('/api/configs');
+      propertyFiles = result.properties || [];
+      cardFiles = result.cards || [];
       if (propertyFiles.length) selectedFile = propertyFiles[0].name;
+      if (cardFiles.length) selectedCardFile = cardFiles[0].name;
     } catch (e) {
       errorMsg = 'Failed to load config files';
     }
@@ -81,7 +87,7 @@
     errorMsg = '';
     const cleaned = names.map(n => n.trim() || 'Player');
     try {
-      await postJSON('/api/game/create', { players: cleaned, startingCash, propertyFile: selectedFile });
+      await postJSON('/api/game/create', { players: cleaned, startingCash, propertyFile: selectedFile, cardFile: selectedCardFile });
       await loadGame();
       rollResults = [];
       gameCreated = true;
@@ -89,6 +95,7 @@
       playerCount = 2;
       names = ['', ''];
       selectedFile = propertyFiles.length ? propertyFiles[0].name : '';
+      selectedCardFile = cardFiles.length ? cardFiles[0].name : '';
     } catch (e) {
       errorMsg = e.message || 'Failed to create game';
     }
@@ -207,34 +214,87 @@
 
 </script>
 
-<h2>Create Game</h2>
+<h2>Main Menu</h2>
+
 {#if errorMsg}
   <div style="color:red;background:#ffe0e0;padding:10px;border-radius:6px;margin-bottom:12px">{errorMsg}</div>
 {/if}
 
-{#if showContinueDialog && existingGame}
+{#if !gameCreated && !showContinueDialog}
+  <div style="margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 12px;">
+    <button on:click={() => activeTab = 'number'} style="font-weight: {activeTab === 'number' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'number' ? '#2196f3' : '#eee'}; color: {activeTab === 'number' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">🎲 Number</button>
+    <button on:click={() => activeTab = 'players'} style="font-weight: {activeTab === 'players' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'players' ? '#2196f3' : '#eee'}; color: {activeTab === 'players' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">👥 Players</button>
+    <button on:click={() => activeTab = 'cash'} style="font-weight: {activeTab === 'cash' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'cash' ? '#2196f3' : '#eee'}; color: {activeTab === 'cash' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">💵 Starting Cash</button>
+    <button on:click={() => activeTab = 'properties'} style="font-weight: {activeTab === 'properties' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'properties' ? '#2196f3' : '#eee'}; color: {activeTab === 'properties' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">🏠 Property Set</button>
+    <button on:click={() => activeTab = 'cardfile'} style="font-weight: {activeTab === 'cardfile' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'cardfile' ? '#2196f3' : '#eee'}; color: {activeTab === 'cardfile' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">🎴 Chance/Chest</button>
+    <button on:click={() => activeTab = 'create'} style="font-weight: {activeTab === 'create' ? 'bold' : 'normal'}; padding: 8px; background: {activeTab === 'create' ? '#4caf50' : '#eee'}; color: {activeTab === 'create' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">✓ Create Game</button>
+  </div>
+
+  {#if activeTab === 'players'}
+    <h3>Player Names</h3>
+    <div>
+      {#each names as nm, idx}
+        <div style="margin: 8px 0;">
+          <input bind:value={names[idx]} placeholder={`Player ${idx+1} name`} style="padding: 6px; width: 200px;" />
+        </div>
+      {/each}
+    </div>
+  {:else if activeTab === 'number'}
+    <h3>Number of Players</h3>
+    <label>Players: 
+      <select bind:value={playerCount} on:change={() => {names = Array.from({length:playerCount}, (_,i) => names[i] || `Player ${i+1}`);}} style="padding: 6px;">
+        <option value={2}>2</option>
+        <option value={3}>3</option>
+        <option value={4}>4</option>
+        <option value={5}>5</option>
+        <option value={6}>6</option>
+        <option value={7}>7</option>
+        <option value={8}>8</option>
+      </select>
+    </label>
+  {:else if activeTab === 'cash'}
+    <h3>Starting Cash per Player</h3>
+    <label>Cash: $
+      <input type="number" bind:value={startingCash} min="100" step="50" style="padding: 6px; width: 120px;" />
+    </label>
+  {:else if activeTab === 'properties'}
+    <h3>Property Set</h3>
+    <label>Select property set: 
+      <select bind:value={selectedFile} style="padding: 6px;">
+        <option value="">Default</option>
+        {#each propertyFiles as f}
+          <option value={f.name}>{f.title || f.name}</option>
+        {/each}
+      </select>
+    </label>
+  {:else if activeTab === 'cardfile'}
+    <h3>Chance/Community Chest Cards</h3>
+    <label>Select card set: 
+      <select bind:value={selectedCardFile} style="padding: 6px;">
+        <option value="">Default</option>
+        {#each cardFiles as f}
+          <option value={f.name}>{f.title || f.name}</option>
+        {/each}
+      </select>
+    </label>
+  {:else if activeTab === 'create'}
+    <h3>Create Game</h3>
+    <p>Review your settings:</p>
+    <ul>
+      <li><strong>Players:</strong> {playerCount} ({names.filter(n => n.trim()).join(', ') || 'No names entered'})</li>
+      <li><strong>Starting Cash:</strong> ${startingCash}</li>
+      <li><strong>Property Set:</strong> {propertyFiles.find(f => f.name === selectedFile)?.title || 'Default'}</li>
+    </ul>
+    <button on:click={createGame} style="margin-top: 16px; padding: 12px 24px; background: #4caf50; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 1.1em;">Start Game</button>
+  {/if}
+{:else if showContinueDialog && existingGame}
   <div style="background:#e3f2fd;padding:16px;border-radius:6px;margin-bottom:12px;border:2px solid #2196f3">
     <h3>Previous Game Found</h3>
     <p>Players: {existingGame.players.map(p => `${p.name} ($${p.cash})`).join(', ')}</p>
     <button on:click={continueGame} style="margin-right:8px">Continue Game</button>
-    <button on:click={startNewGame}>Start New Game</button>
+    <button on:click={startNewGame} style="margin-right:8px">Start New Game</button>
   </div>
-{:else if !gameCreated}
-  <label>Players: <input type="number" bind:value={playerCount} min="2" max="8" on:change={() => setCount(playerCount)} /></label>
-  <label>Starting cash: <input type="number" bind:value={startingCash} /></label>
-  <label>Property set: <select bind:value={selectedFile}>
-    <option value="">Default</option>
-    {#each propertyFiles as f}
-      <option value={f.name}>{f.title || f.name}</option>
-    {/each}
-  </select></label>
-  <div>
-    {#each names as nm, idx}
-      <div><input bind:value={names[idx]} placeholder={`Player ${idx+1} name`} /></div>
-    {/each}
-  </div>
-  <button on:click={createGame}>Create</button>
-{:else if !rolloffComplete}
+{:else if gameCreated && !rolloffComplete}
   <p style="font-weight:bold">Game created! Now perform the roll-off to determine the first player.</p>
   
   {#if !rolloffMode}
@@ -260,7 +320,7 @@
       <button on:click={() => { rolloffMode = null; manualRollValues = {}; }} style="padding:8px 16px;background:#999;color:white;border:none;cursor:pointer">Cancel</button>
     </div>
   {/if}
-{:else}
+{:else if rolloffComplete}
   <p style="color:green;font-weight:bold">✓ First player selected! Go to <strong>Dice</strong>, <strong>Management</strong>, or <strong>Transfers</strong> to play.</p>
 {/if}
 

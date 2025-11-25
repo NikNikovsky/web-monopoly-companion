@@ -5,6 +5,7 @@
   import Management from './routes/Management.svelte';
 
   let state = 'intro'; // 'intro', 'players', 'preroll', 'management', 'editor'
+  let previousState = 'intro'; // track where we came from for Editor return
   let gameStarted = false;
   let managementComponent = null;
 
@@ -14,8 +15,16 @@
       alert('Complete the rolloff in intro section first');
       return;
     }
+    // Save previous state if going to editor
+    if (s === 'editor') {
+      previousState = state;
+    }
     state = s;
     window.scrollTo(0,0);
+  }
+
+  function exitEditor() {
+    state = previousState;
   }
 
   function setGameStarted() {
@@ -58,7 +67,6 @@
 
   function resetGame() {
     gameStarted = false;
-    firstRollMade = false;
     state = 'intro';
   }
 </script>
@@ -80,7 +88,10 @@
     {#if state === 'preroll'}
       <button on:click={() => navigate('management')}>Management</button>
     {/if}
-    {#if state === 'intro'}
+    {#if state === 'intro' || state === 'editor'}
+      <button on:click={() => navigate('editor')}>Editor</button>
+    {/if}
+    {#if gameStarted && (state === 'management' || state === 'preroll') && state !== 'editor'}
       <button on:click={() => navigate('editor')}>Editor</button>
     {/if}
   </div>
@@ -98,7 +109,7 @@
   {#if state === 'intro'}
     <Players on:gameReady={setGameStarted} />
   {:else if state === 'editor'}
-    <Editor />
+    <Editor on:exitEditor={exitEditor} />
   {:else if state === 'preroll'}
     <PreRoll on:rollDone={onRollDone} />
   {:else if state === 'management'}
