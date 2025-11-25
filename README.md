@@ -2,33 +2,85 @@
 
 Minimal web-based Monopoly companion: roll dice, log manual rolls, and edit property and card names via the `config/` JSON files.
 
-Quick start
+## Quick Start
+
+### Development Mode (with hot-reload)
+```bash
+npm run dev
+# Frontend: http://localhost:5173
+# Backend: http://localhost:3000
 ```
-npm install
-npm start
-# open http://localhost:3000
+
+### Production Mode
+```bash
+npm run build-frontend    # Build frontend once
+npm start                 # Start backend only
+# Open: http://localhost:3000
 ```
 
-Data & config
-- `config/properties.json`: property cards and values used by the game (editable via UI or directly).
-- `data/rolls.json`: stored manual roll history (appends when you log manual rolls).
+## Stopping the Servers
 
-New features
-- `config/properties.json`: property cards and values used by the game (editable via UI or directly).
-- `data/game.json`: current game state (players, ownership, currentTurn).
-- `data/actions.json`: action log (who bought which property and when, turn changes, custom actions).
+### Stop All Servers
+```bash
+pkill -f "node\|vite"
+```
 
-New: human-readable log
-- `data/actions.log`: append-only human-readable text log. The UI exposes a "Refresh Raw Log" button to view this file.
+### Stop Only Frontend Dev Server
+```bash
+pkill -f vite
+```
 
-Houses & Hotels
-- The app supports buying houses and hotels. House cost is calculated as `max(50, round(propertyValue * 0.5))`. Hotel cost is `max(50, round(propertyValue * 1.5))`.
-- Houses are stored in `data/game.json` under the `houses` mapping; `5` indicates a hotel.
+### Stop Only Backend
+```bash
+pkill -f "node server"
+```
 
+## Data & Config
 
-Usage notes
-- Open the app, use the 'Create Game' section to choose player count and create a game. You can optionally fill names.
-- Buy properties from the properties list during a player's turn; purchases update `data/game.json` and append to `data/actions.json`.
-- Edit `config/properties.json` (or use the in-app editor) to change available properties and values.
+- `config/properties.json`: property cards and values used by the game (editable via UI or directly)
+- `data/game.json`: current game state (players, ownership, currentTurn)
+- `data/actions.json`: action log (who bought which property and when, turn changes)
+- `data/actions.log`: append-only human-readable text log
+- `data/rolls.json`: stored roll history
 
-# web-monopoly-companion
+## Features
+
+### Game Management
+- Create games with multiple players
+- Perform automated or manual rolloff to determine first player
+- Roll dice during gameplay with countdown timer
+- Buy properties (1 per turn limit)
+- Buy and upgrade houses/hotels
+- Transfer money between players
+- View game history and action logs
+
+### Configuration
+- Edit `config/properties.json` to customize properties and values
+- House cost: `max(50, round(propertyValue * 0.5))`
+- Hotel cost: `max(50, round(propertyValue * 1.5))`
+- 5 houses on a property indicates a hotel
+
+### Visuals
+- Color-coded property bars for quick identification
+- 30-second countdown timer after each dice roll
+- Responsive UI for all screen sizes
+- Real-time game state synchronization
+
+## Technology Stack
+
+**Backend:**
+- Express 5.1.0 (Node.js)
+- JSON file persistence
+
+**Frontend:**
+- Svelte 4.2.20 (UI framework)
+- Vite 7.2.0 (build tool)
+- Zero vulnerabilities
+
+## Notes
+
+- Game data persists in `data/` and `config/` JSON files
+- All API endpoints are RESTful JSON
+- No database required - file-based persistence
+- Security headers included for safety
+- Strict file system access controls in development
