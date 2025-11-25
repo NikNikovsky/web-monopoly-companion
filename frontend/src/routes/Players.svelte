@@ -120,11 +120,18 @@
       await postJSON('/api/game/set-first', { playerId: winner.id });
       await loadGame();
       
-      // Show results and auto-advance immediately
+      // Show results with countdown
       showRolloffResults = true;
-      rolloffComplete = true;
-      showRolloffResults = false;
-      dispatch('gameReady');
+      rolloffCountdown = 5;
+      const countdown = setInterval(() => {
+        rolloffCountdown--;
+        if (rolloffCountdown <= 0) {
+          clearInterval(countdown);
+          rolloffComplete = true;
+          showRolloffResults = false;
+          dispatch('gameReady');
+        }
+      }, 1000);
     } catch (e) {
       errorMsg = e.message || 'Roll-off failed';
     }

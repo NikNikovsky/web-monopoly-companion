@@ -4,142 +4,170 @@
     {
       "name": "Mediterranean Avenue",
       "value": 60,
-      "color": "Brown"
+      "color": "Brown",
+      "mortgageValue": 30
     },
     {
       "name": "Baltic Avenue",
       "value": 60,
-      "color": "Brown"
+      "color": "Brown",
+      "mortgageValue": 30
     },
     {
       "name": "Oriental Avenue",
       "value": 100,
-      "color": "Light Blue"
+      "color": "Light Blue",
+      "mortgageValue": 50
     },
     {
       "name": "Vermont Avenue",
       "value": 100,
-      "color": "Light Blue"
+      "color": "Light Blue",
+      "mortgageValue": 50
     },
     {
       "name": "Connecticut Avenue",
       "value": 120,
-      "color": "Light Blue"
+      "color": "Light Blue",
+      "mortgageValue": 60
     },
     {
       "name": "St. Charles Place",
       "value": 140,
-      "color": "Pink"
+      "color": "Pink",
+      "mortgageValue": 70
     },
     {
       "name": "States Avenue",
       "value": 140,
-      "color": "Pink"
+      "color": "Pink",
+      "mortgageValue": 70
     },
     {
       "name": "Virginia Avenue",
       "value": 160,
-      "color": "Pink"
+      "color": "Pink",
+      "mortgageValue": 80
     },
     {
       "name": "St. James Place",
       "value": 180,
-      "color": "Orange"
+      "color": "Orange",
+      "mortgageValue": 90
     },
     {
       "name": "Tennessee Avenue",
       "value": 180,
-      "color": "Orange"
+      "color": "Orange",
+      "mortgageValue": 90
     },
     {
       "name": "New York Avenue",
       "value": 200,
-      "color": "Orange"
+      "color": "Orange",
+      "mortgageValue": 100
     },
     {
       "name": "Kentucky Avenue",
       "value": 220,
-      "color": "Red"
+      "color": "Red",
+      "mortgageValue": 110
     },
     {
       "name": "Indiana Avenue",
       "value": 220,
-      "color": "Red"
+      "color": "Red",
+      "mortgageValue": 110
     },
     {
       "name": "Illinois Avenue",
       "value": 240,
-      "color": "Red"
+      "color": "Red",
+      "mortgageValue": 120
     },
     {
       "name": "Atlantic Avenue",
       "value": 260,
-      "color": "Yellow"
+      "color": "Yellow",
+      "mortgageValue": 130
     },
     {
       "name": "Ventnor Avenue",
       "value": 260,
-      "color": "Yellow"
+      "color": "Yellow",
+      "mortgageValue": 130
     },
     {
       "name": "Marvin Gardens",
       "value": 280,
-      "color": "Yellow"
+      "color": "Yellow",
+      "mortgageValue": 140
     },
     {
       "name": "Pacific Avenue",
       "value": 300,
-      "color": "Green"
+      "color": "Green",
+      "mortgageValue": 150
     },
     {
       "name": "North Carolina Avenue",
       "value": 300,
-      "color": "Green"
+      "color": "Green",
+      "mortgageValue": 150
     },
     {
       "name": "Pennsylvania Avenue",
       "value": 320,
-      "color": "Green"
+      "color": "Green",
+      "mortgageValue": 160
     },
     {
       "name": "Park Place",
       "value": 350,
-      "color": "Dark Blue"
+      "color": "Dark Blue",
+      "mortgageValue": 175
     },
     {
       "name": "Boardwalk",
       "value": 400,
-      "color": "Dark Blue"
+      "color": "Dark Blue",
+      "mortgageValue": 200
     },
     {
       "name": "Reading Railroad",
       "value": 200,
-      "color": "Railroad"
+      "color": "Railroad",
+      "canHaveHouses": false
     },
     {
       "name": "Pennsylvania Railroad",
       "value": 200,
-      "color": "Railroad"
+      "color": "Railroad",
+      "canHaveHouses": false
     },
     {
       "name": "B. & O. Railroad",
       "value": 200,
-      "color": "Railroad"
+      "color": "Railroad",
+      "canHaveHouses": false
     },
     {
       "name": "Short Line",
       "value": 200,
-      "color": "Railroad"
+      "color": "Railroad",
+      "canHaveHouses": false
     },
     {
       "name": "Electric Company",
       "value": 150,
-      "color": "Utility"
+      "color": "Utility",
+      "canHaveHouses": false
     },
     {
       "name": "Water Works",
       "value": 150,
-      "color": "Utility"
+      "color": "Utility",
+      "canHaveHouses": false
     }
   ]
 }

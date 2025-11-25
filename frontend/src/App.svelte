@@ -1,21 +1,17 @@
 <script>
   import Players from './routes/Players.svelte';
   import Editor from './routes/Editor.svelte';
+  import PreRoll from './routes/PreRoll.svelte';
   import Management from './routes/Management.svelte';
 
-  let state = 'intro'; // 'intro', 'management', 'editor'
+  let state = 'intro'; // 'intro', 'players', 'preroll', 'management', 'editor'
   let gameStarted = false;
-  let firstRollMade = false;
   let managementComponent = null;
 
   function navigate(s) {
     // only allow transitions when appropriate
-    if (!gameStarted && ['management'].includes(s)) {
+    if (!gameStarted && ['management', 'preroll'].includes(s)) {
       alert('Complete the rolloff in intro section first');
-      return;
-    }
-    if (gameStarted && !firstRollMade && ['management'].includes(s)) {
-      alert('Roll the dice first to start playing');
       return;
     }
     state = s;
@@ -24,19 +20,16 @@
 
   function setGameStarted() {
     gameStarted = true;
-    state = 'intro'; // stay in intro, show dice section
-    firstRollMade = false;
+    state = 'preroll'; // auto go to preroll to roll dice
   }
 
-  function setFirstRollMade() {
-    firstRollMade = true;
-    state = 'management'; // auto-navigate to management after first roll
+  function onRollDone() {
+    state = 'management'; // after rolling, enter management
   }
 
   function onTurnEnd() {
-    // When turn ends, reset roll state so next player must roll
-    firstRollMade = false;
-    state = 'intro'; // go back to intro to show dice UI for next player
+    // When turn ends, go back to preroll for next player
+    state = 'preroll';
   }
 
 
@@ -84,7 +77,7 @@
 
 <nav>
   <div class="nav-left">
-    {#if state !== 'intro'}
+    {#if state === 'preroll'}
       <button on:click={() => navigate('management')}>Management</button>
     {/if}
     {#if state === 'intro'}
@@ -95,7 +88,7 @@
     {#if gameStarted && state === 'management'}
       <button on:click={endTurn} class="endTurnBtn">End Turn</button>
     {/if}
-    {#if gameStarted && state !== 'intro'}
+    {#if gameStarted && (state === 'management' || state === 'preroll')}
       <button on:click={confirmResetGame} style="color:darkorange">Main Menu</button>
     {/if}
   </div>
@@ -103,9 +96,11 @@
 
 <div class="container">
   {#if state === 'intro'}
-    <Players on:gameReady={setGameStarted} on:firstRoll={setFirstRollMade} />
+    <Players on:gameReady={setGameStarted} />
   {:else if state === 'editor'}
     <Editor />
+  {:else if state === 'preroll'}
+    <PreRoll on:rollDone={onRollDone} />
   {:else if state === 'management'}
     <Management bind:this={managementComponent} on:turnEnd={onTurnEnd} />
   {/if}

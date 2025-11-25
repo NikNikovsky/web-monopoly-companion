@@ -272,6 +272,17 @@ app.get('/api/properties', async (req, res) => {
   }
 });
 
+app.get('/api/cards', async (req, res) => {
+  try {
+    const cardsFile = path.join(CONFIG_DIR, 'cards.json');
+    const data = fs.readFileSync(cardsFile, 'utf-8');
+    const cardsData = JSON.parse(data);
+    res.json(cardsData.cards || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read cards' });
+  }
+});
+
 // Config files management
 app.get('/api/configs', async (req, res) => {
   try {
@@ -549,6 +560,72 @@ app.post('/api/game/buy-hotel', async (req, res) => {
   }
 });
 
+// remove house from property
+app.post('/api/game/remove-house', async (req, res) => {
+  const { playerId, propertyName } = req.body || {};
+  if (!playerId || !propertyName) return res.status(400).json({ error: 'playerId and propertyName required' });
+  try {
+    const game = await readGame();
+    let props = await readProperties();
+    if (game.propertyFile) {
+      try {
+        const cfg = await readConfigFile(game.propertyFile);
+        props = Array.isArray(cfg) ? cfg : (cfg.properties || []);
+      } catch (e) {}
+    }
+    const prop = props.find(p => p.name === propertyName);
+    if (!prop) return res.status(404).json({ error: 'Property not found' });
+    if (game.ownership[propertyName] !== playerId) return res.status(400).json({ error: 'Property not owned by player' });
+    const player = game.players.find(p => p.id === playerId);
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+    const current = game.houses[propertyName] || 0;
+    if (current <= 0) return res.status(400).json({ error: 'No houses to remove' });
+    game.houses[propertyName] = current - 1;
+    await writeGame(game);
+    const actions = await readActions();
+    const entry = { type: 'remove-house', playerId, playerName: player.name, property: propertyName, houses: game.houses[propertyName], timestamp: new Date().toISOString() };
+    actions.push(entry);
+    await writeActions(actions);
+    await appendLogLine(`${player.name} removed a house from ${propertyName} (houses=${game.houses[propertyName]})`);
+    res.json({ ok: true, game, action: entry });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to remove house' });
+  }
+});
+
+// mortgage property
+app.post('/api/game/mortgage', async (req, res) => {
+  const { playerId, propertyName } = req.body || {};
+  if (!playerId || !propertyName) return res.status(400).json({ error: 'playerId and propertyName required' });
+  try {
+    const game = await readGame();
+    let props = await readProperties();
+    if (game.propertyFile) {
+      try {
+        const cfg = await readConfigFile(game.propertyFile);
+        props = Array.isArray(cfg) ? cfg : (cfg.properties || []);
+      } catch (e) {}
+    }
+    const prop = props.find(p => p.name === propertyName);
+    if (!prop) return res.status(404).json({ error: 'Property not found' });
+    if (game.ownership[propertyName] !== playerId) return res.status(400).json({ error: 'Property not owned by player' });
+    const current = game.houses[propertyName] || 0;
+    if (current > 0) return res.status(400).json({ error: 'Cannot mortgage property with houses' });
+    // Just mark as mortgaged - the transfer was already handled by the frontend
+    if (!game.mortgaged) game.mortgaged = {};
+    game.mortgaged[propertyName] = true;
+    await writeGame(game);
+    const actions = await readActions();
+    const entry = { type: 'mortgage', playerId, playerName: game.players.find(p => p.id === playerId)?.name, property: propertyName, timestamp: new Date().toISOString() };
+    actions.push(entry);
+    await writeActions(actions);
+    await appendLogLine(`${game.players.find(p => p.id === playerId)?.name} mortgaged ${propertyName}`);
+    res.json({ ok: true, game, action: entry });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to mortgage' });
+  }
+});
+
 app.post('/api/game/end-turn', async (req, res) => {
   try {
     const game = await readGame();
@@ -568,16 +645,32 @@ app.post('/api/game/end-turn', async (req, res) => {
   }
 });
 
-// transfer money between players
+// transfer money between players or from bank
 app.post('/api/game/transfer', async (req, res) => {
   const { fromId, toId, amount, note } = req.body || {};
   const amt = Math.round(Number(amount) || 0);
-  if (!fromId || !toId || amt <= 0) return res.status(400).json({ error: 'fromId, toId and positive amount required' });
+  if (!toId || amt <= 0) return res.status(400).json({ error: 'toId and positive amount required' });
   try {
     const game = await readGame();
-    const from = game.players.find(p => p.id === fromId);
     const to = game.players.find(p => p.id === toId);
-    if (!from || !to) return res.status(404).json({ error: 'Player not found' });
+    if (!to) return res.status(404).json({ error: 'Player not found' });
+    
+    // Bank transfer (fromId is null)
+    if (fromId === null || fromId === undefined) {
+      to.cash += amt;
+      await writeGame(game);
+      const actions = await readActions();
+      const entry = { type: 'transfer', fromId: null, toId, fromName: 'Bank', toName: to.name, amount: amt, note: note || '', timestamp: new Date().toISOString() };
+      actions.push(entry);
+      await writeActions(actions);
+      await appendLogLine(`${to.name} received ${amt} from Bank${note ? ' — ' + note : ''}`);
+      res.json({ ok: true, game, action: entry });
+      return;
+    }
+
+    // Player-to-player transfer
+    const from = game.players.find(p => p.id === fromId);
+    if (!from) return res.status(404).json({ error: 'From player not found' });
     if (from.cash < amt) return res.status(400).json({ error: 'Insufficient funds' });
     from.cash -= amt;
     to.cash += amt;
