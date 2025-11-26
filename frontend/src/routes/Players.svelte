@@ -1,59 +1,42 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { fetchJSON, postJSON } from '../lib/api.js';
+  import * as storage from '../lib/storage.js';
 
   const dispatch = createEventDispatcher();
 
-  let activeTab = 'number'; // 'number', 'players', 'cash', 'properties', 'cardfile', 'create'
+  let activeTab = 'number';
   let playerCount = 2;
   let startingCash = 1500;
   let names = ['',''];
   let rollResults = [];
   let players = [];
-  let propertyFiles = [];
-  let selectedFile = '';
-  let cardFiles = [];
-  let selectedCardFile = '';
   let errorMsg = '';
   let gameCreated = false;
   let rolloffComplete = false;
   let showContinueDialog = false;
   let existingGame = null;
-  let rolloffMode = null; // 'auto' or 'manual' or null
-  let manualRollValues = {}; // store manual roll inputs by player id
-  let rolloffCountdown = 0; // countdown timer in seconds
-  let showRolloffResults = false; // show results before auto-advancing
+  let rolloffMode = null;
+  let manualRollValues = {};
+  let rolloffCountdown = 0;
+  let showRolloffResults = false;
 
-  const loadConfigs = async () => {
+  const checkExistingGame = () => {
     try {
-      const result = await fetchJSON('/api/configs');
-      propertyFiles = result.properties || [];
-      cardFiles = result.cards || [];
-      if (propertyFiles.length) selectedFile = propertyFiles[0].name;
-      if (cardFiles.length) selectedCardFile = cardFiles[0].name;
-    } catch (e) {
-      errorMsg = 'Failed to load config files';
-    }
-  }
-
-  const checkExistingGame = async () => {
-    try {
-      const g = await fetchJSON('/api/game');
+      const g = storage.getGame();
       if (g && g.players && g.players.length > 0) {
         existingGame = g;
         showContinueDialog = true;
         gameCreated = true;
-        // populate players display but don't mark as rolloff complete yet
         players = g.players;
       }
     } catch (e) {
-      // no existing game, proceed normally
+      // no existing game
     }
   }
 
-  const continueGame = async () => {
+  const continueGame = () => {
     try {
-      await loadGame();
+      loadGame();
       rolloffComplete = true;
       dispatch('gameReady');
       showContinueDialog = false;
@@ -62,10 +45,9 @@
     }
   }
 
-  const startNewGame = async () => {
+  const startNewGame = () => {
     try {
-      // Clear all data on server
-      await postJSON('/api/game/clear', {});
+      storage.clearGame();
       showContinueDialog = false;
       gameCreated = false;
       rolloffComplete = false;
@@ -83,51 +65,63 @@
     names = Array.from({length:n}, (_,i) => names[i] || `Player ${i+1}`);
   }
 
-  async function createGame(){
+  function createGame(){
     errorMsg = '';
     const cleaned = names.map(n => n.trim() || 'Player');
     try {
-      await postJSON('/api/game/create', { players: cleaned, startingCash, propertyFile: selectedFile, cardFile: selectedCardFile });
-      await loadGame();
+      const gameData = {
+        players: cleaned.map((name, idx) => ({
+          id: idx + 1,
+          name,
+          cash: startingCash,
+          properties: []
+        })),
+        startingCash,
+        currentPlayer: 1,
+        gameState: 'setup',
+        firstPlayerSet: false,
+        history: []
+      };
+      storage.saveGame(gameData);
+      loadGame();
       rollResults = [];
       gameCreated = true;
-      // reset form after successful game creation
       playerCount = 2;
       names = ['', ''];
-      selectedFile = propertyFiles.length ? propertyFiles[0].name : '';
-      selectedCardFile = cardFiles.length ? cardFiles[0].name : '';
     } catch (e) {
       errorMsg = e.message || 'Failed to create game';
     }
   }
 
-  async function loadGame(){
+  function loadGame(){
     try {
-      const g = await fetchJSON('/api/game');
+      const g = storage.getGame();
       players = g.players || [];
     } catch (e) {
       players = [];
     }
   }
 
-  async function doRolloff(){
+  function doRolloff(){
     errorMsg = '';
     try {
-      const g = await fetchJSON('/api/game');
-      // perform roll for each player sequentially via API
       rollResults = [];
-      for (const p of g.players){
-        const r = await postJSON('/api/roll', { count: 2, sides: 6 });
-        rollResults.push({ id: p.id, name: p.name, rolls: r.rolls, sum: r.sum });
+      for (const p of players){
+        const rolls = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+        const sum = rolls.reduce((a,b) => a+b, 0);
+        rollResults.push({ id: p.id, name: p.name, rolls, sum });
       }
       rollResults.sort((a,b)=>b.sum-a.sum);
-      // set first player based on highest roll
+      
       const winner = rollResults[0];
       if (!winner) throw new Error('No roll results');
-      await postJSON('/api/game/set-first', { playerId: winner.id });
-      await loadGame();
       
-      // Show results with countdown
+      const g = storage.getGame();
+      g.currentPlayer = winner.id;
+      g.firstPlayerSet = true;
+      storage.saveGame(g);
+      loadGame();
+      
       showRolloffResults = true;
       rolloffCountdown = 5;
       const countdown = setInterval(() => {
@@ -146,23 +140,23 @@
 
   let diceCount = 2, diceSides = 6;
   let lastRoll = null;
-  let rolls = [];
   let manualRollInput = null;
 
-  const manualRolloff = async () => {
+  const manualRolloff = () => {
     try {
       const values = Object.values(manualRollValues).filter(v => v != null && v !== '');
       if (values.length !== players.length) return errorMsg = 'Please enter all player rolls';
       
-      // Find player with highest roll
       let maxRoll = Math.max(...values);
-      let playerEntries = players.map((p, idx) => ({ player: p, roll: manualRollValues[p.id] }));
-      let winner = playerEntries.find(e => e.roll == maxRoll)?.player;
+      let winner = players.find((p, idx) => manualRollValues[p.id] == maxRoll);
       
       if (!winner) throw new Error('Could not determine winner');
       
-      await postJSON('/api/game/set-first', { playerId: winner.id });
-      await loadGame();
+      const g = storage.getGame();
+      g.currentPlayer = winner.id;
+      g.firstPlayerSet = true;
+      storage.saveGame(g);
+      loadGame();
       rolloffComplete = true;
       rolloffMode = null;
       dispatch('gameReady');
@@ -171,23 +165,22 @@
     }
   }
 
-  const manualFirstRoll = async () => {
+  const manualFirstRoll = () => {
     try {
-      if (!manualRollInput) return errorMsg = 'Please enter a roll value';
-      lastRoll = { rolls: [manualRollInput], sum: manualRollInput, timestamp: new Date().toISOString() };
-      await postJSON('/api/log-roll', { rolls: [manualRollInput], note: 'manual' });
-      await postJSON('/api/game/mark-first-roll', {});
+      if (!lastRoll) return errorMsg = 'Please roll first';
+      storage.addRoll({ rolls: [lastRoll], timestamp: new Date().toISOString() });
       dispatch('firstRoll');
     } catch (e) {
       errorMsg = 'Manual roll failed: ' + (e.message || 'unknown error');
     }
   }
 
-  const doRoll = async () => {
+  const doRoll = () => {
     try {
-      const result = await postJSON('/api/roll', { count: diceCount, sides: diceSides });
-      lastRoll = result;
-      await postJSON('/api/game/mark-first-roll', {});
+      const rolls = Array.from({length:diceCount}, () => Math.floor(Math.random() * diceSides) + 1);
+      const sum = rolls.reduce((a,b) => a+b, 0);
+      lastRoll = sum;
+      storage.addRoll({ rolls, sum, timestamp: new Date().toISOString() });
       dispatch('firstRoll');
     } catch (e) {
       errorMsg = 'Roll failed: ' + (e.message || 'unknown error');
@@ -201,13 +194,33 @@
     dispatch('gameReady');
   }
 
-  const init = async () => {
-    loadConfigs();
+  async function handleGameImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      if (data.players && Array.isArray(data.players)) {
+        storage.saveGame(data);
+        existingGame = data;
+        players = data.players;
+        showContinueDialog = true;
+        gameCreated = true;
+        errorMsg = 'Game imported: ' + file.name;
+        setTimeout(() => { errorMsg = ''; }, 3000);
+      } else {
+        throw new Error('Invalid game file format');
+      }
+    } catch (err) {
+      errorMsg = 'Failed to import: ' + err.message;
+    }
+  }
+
+  const init = () => {
     loadGame();
     checkExistingGame();
-    try {
-      rolls = (await fetchJSON('/api/rolls')).slice().reverse();
-    } catch (e) {}
   }
 
   init();
@@ -259,33 +272,26 @@
     </label>
   {:else if activeTab === 'properties'}
     <h3>Property Set</h3>
-    <label>Select property set: 
-      <select bind:value={selectedFile} style="padding: 6px;">
-        <option value="">Default</option>
-        {#each propertyFiles as f}
-          <option value={f.name}>{f.title || f.name}</option>
-        {/each}
-      </select>
-    </label>
+    <p><small>Use the Config Editor tab to customize properties and card sets.</small></p>
   {:else if activeTab === 'cardfile'}
     <h3>Chance/Community Chest Cards</h3>
-    <label>Select card set: 
-      <select bind:value={selectedCardFile} style="padding: 6px;">
-        <option value="">Default</option>
-        {#each cardFiles as f}
-          <option value={f.name}>{f.title || f.name}</option>
-        {/each}
-      </select>
-    </label>
+    <p><small>Use the Config Editor tab to customize card sets.</small></p>
   {:else if activeTab === 'create'}
     <h3>Create Game</h3>
     <p>Review your settings:</p>
     <ul>
       <li><strong>Players:</strong> {playerCount} ({names.filter(n => n.trim()).join(', ') || 'No names entered'})</li>
       <li><strong>Starting Cash:</strong> ${startingCash}</li>
-      <li><strong>Property Set:</strong> {propertyFiles.find(f => f.name === selectedFile)?.title || 'Default'}</li>
     </ul>
     <button on:click={createGame} style="margin-top: 16px; padding: 12px 24px; background: #4caf50; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 1.1em;">Start Game</button>
+    
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+      <h4>Or import a saved game:</h4>
+      <label style="display: inline-block; padding: 8px 16px; background: #2196f3; color: white; border-radius: 4px; cursor: pointer;">
+        Choose Game File
+        <input type="file" accept=".json" on:change={handleGameImport} style="display: none;" />
+      </label>
+    </div>
   {/if}
 {:else if showContinueDialog && existingGame}
   <div style="background:#e3f2fd;padding:16px;border-radius:6px;margin-bottom:12px;border:2px solid #2196f3">
@@ -331,6 +337,9 @@
       <li>{p.id}. {p.name} — ${p.cash}</li>
     {/each}
   </ul>
+  {#if gameCreated}
+    <button on:click={() => { const g = storage.getGame(); storage.exportToJSON('monopoly-game.json', g); }} style="margin-top: 12px; padding: 8px 16px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 4px;">Export Game</button>
+  {/if}
 {/if}
 
 {#if showRolloffResults}

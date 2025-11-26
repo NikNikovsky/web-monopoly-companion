@@ -1,23 +1,23 @@
 # web-monopoly-companion
 
-Minimal web-based Monopoly companion: manage players, roll dice, track property ownership, and edit configuration via an interactive UI or JSON files.
+A **100% browser-based** Monopoly companion app - no backend needed! Play Monopoly with an interactive interface, manage players, roll dice, buy properties, and edit custom configurations. Everything runs locally in your browser using localStorage.
 
 ## Quick Start
 
-### Development Mode (with hot-reload)
+### Development
 ```bash
+cd frontend
+npm install
 npm run dev
 # Frontend: http://localhost:5173
 # Backend: http://localhost:3000
 ```
 
-### Production Mode
+### Build for Production
 ```bash
 npm run build-frontend    # Build frontend once
 npm start                 # Start backend only
-# Open: http://localhost:3000
 ```
-
 ## Stopping the Servers
 
 ### Stop All Servers
@@ -34,56 +34,200 @@ pkill -f vite
 ```bash
 pkill -f "node server"
 ```
-
-## Data & Config
-
-- `config/properties/`: property card configurations (JSON files with display names)
-- `config/cards/`: chance/chest card configurations (JSON files with display names)
-- `data/game.json`: current game state (players, positions, ownership, currentTurn)
-- `data/actions.json`: action log (who bought which property, turn changes, etc.)
-- `data/actions.log`: append-only human-readable text log
-- `data/rolls.json`: stored roll history
-
 ## Features
 
 ### Game Management
 - **Create Game**: Set number of players, names, starting cash
-- **Select Config**: Choose property and card configurations before game starts
-- **Dice Rolling**: Roll dice with countdown timer, auto-progresses player turns
-- **Property Management**: Buy properties during your turn
-- **House/Hotel Building**: Upgrade properties with houses and hotels
-- **Money Transfer**: Move cash between players
-- **Game Editor**: Modify game state during gameplay via the Editor tab
+- **Dice Rolling**: Roll dice manually or auto-roll, with visual display
+- **Property Management**: Buy properties, track ownership
+- **House/Hotel Building**: Upgrade properties with houses/hotels
+- **Money Transfers**: Move cash between players with history log
+- **Game Persistence**: Game saves automatically to browser's localStorage
+- **Game Export/Import**: Download and reload saved games as JSON files
 
 ### Configuration Editor
-- Load property and card configurations from JSON files
-- Edit names, values, colors, and properties in real-time
-- Save changes back to files or create new configurations
-- Sort items by name or value for easier editing
+- **Import JSON**: Load property and card configurations from files on your computer
+- **Edit Live**: Modify names, values, colors in the browser UI
+- **Export**: Download edited configurations as JSON to save locally
+- **Default Properties**: Built-in 28 Monopoly properties as fallback
 
-### Visuals
-- Color-coded property bars for quick identification
-- 30-second countdown timer after each dice roll
-- Responsive UI for all screen sizes
-- Real-time game state synchronization
-- Tab-based navigation (Players, Game Board, Editor)
+### UI & UX
+- 🎨 Color-coded property cards for quick identification
+- 📱 Responsive design - works on desktop, tablet, mobile
+- ⚡ Real-time game state updates
+- 📊 Action history and logs
+- 🔄 No page reloads needed during gameplay
 
-## Technology Stack
+## 🏗️ Technology Stack
 
-**Backend:**
-- Express 5.1.0 (Node.js)
-- JSON file persistence
-
-**Frontend:**
+**Frontend Only:**
 - Svelte 4.2.20 (UI framework)
 - Vite 7.2.0 (build tool)
-- Zero vulnerabilities
+- localStorage API (state persistence)
+- File API (JSON import/export)
 
-## Notes
+**No Backend** - Everything runs in the browser!
 
-- Game data persists in `data/` and `config/` JSON files
-- All API endpoints are RESTful JSON
-- No database required - file-based persistence
-- Security headers included for safety
-- Strict file system access controls in development
-- Both production and development modes serve the frontend from the built files in `public/`
+## 📁 Project Structure
+
+```
+web-monopoly-companion/
+├── frontend/
+│   ├── src/
+│   │   ├── routes/
+│   │   │   ├── Players.svelte      # Game setup, player management
+│   │   │   ├── Dice.svelte         # Dice roller with history
+│   │   │   ├── PreRoll.svelte      # Pre-turn dice roll
+│   │   │   ├── Management.svelte   # Property & money management
+│   │   │   ├── Transfers.svelte    # Money transfers between players
+│   │   │   └── Editor.svelte       # Config file editor
+│   │   ├── lib/
+│   │   │   ├── storage.js          # localStorage wrapper (core logic!)
+│   │   │   └── api.js              # API compatibility layer
+│   │   ├── App.svelte
+│   │   └── main.js
+│   ├── vite.config.js
+│   └── package.json
+├── config/
+│   ├── properties/                 # Property config templates
+│   │   └── properties.json         # Default 28 properties
+│   └── cards/                      # Card config templates
+│       ├── chance.json
+│       └── community-chest.json
+├── package.json
+└── README.md
+```
+
+## 🚀 How to Use
+
+### Playing a Game
+1. Click **"Number"** - Select 2-8 players
+2. Click **"Players"** - Enter player names
+3. Click **"Starting Cash"** - Set initial money (default $1500)
+4. Click **"Create Game"** - Start the game
+5. Perform rolloff to determine first player
+6. Play! Use **Dice**, **Management**, **Transfers** tabs
+
+### Editing Configurations
+1. Go to the **Config Editor** tab
+2. Click **"Import/Export"** mode
+3. Click **"Choose File"** to load a JSON file from your computer
+4. Edit properties, add/remove items, change values
+5. Click **"Export"** to download your changes
+6. Share the JSON file with others!
+
+### JSON File Format
+```json
+{
+  "title": "Property Names",
+  "items": [
+    {
+      "name": "Mediterranean Avenue",
+      "value": 60,
+      "color": "Brown"
+    },
+    {
+      "name": "Baltic Avenue",
+      "value": 60,
+      "color": "Brown"
+    }
+  ]
+}
+```
+
+### Saving & Loading Games
+- **Automatic**: Game state saves to browser's localStorage after every action
+- **Manual Export**: Click "Export Game" in Main Menu to download as JSON
+- **Manual Import**: Click "Choose Game File" to reload a saved game
+- **Clear Data**: Open browser DevTools → Application → localStorage → delete entries
+
+## 🔄 Workflow Example
+
+```
+Start App
+  ↓
+Create 4-player game with $2000 each
+  ↓
+Save game automatically to localStorage
+  ↓
+Play several turns (all saved automatically)
+  ↓
+Export game as "monopoly-game.json" to computer
+  ↓
+Close browser (game still saved in localStorage)
+  ↓
+Reopen browser → Previous game still there!
+  ↓
+Or: Load the JSON file to continue
+```
+
+## 🌐 Deployment Options
+
+### Option 1: GitHub Pages (Free & Easy)
+```bash
+cd frontend
+npm run build
+
+# Copy contents of frontend/dist/ to gh-pages branch
+# See GitHub Pages docs for detailed steps
+```
+
+### Option 2: Netlify
+Drag and drop `frontend/dist/` folder to Netlify.com
+
+### Option 3: Vercel
+```bash
+npm install -g vercel
+vercel --prod
+# Choose frontend/ as root directory
+```
+
+### Option 4: Any Static Host
+- AWS S3 + CloudFront
+- Azure Static Web Apps
+- Google Cloud Storage + Cloud CDN
+- Any web server (nginx, Apache) serving static files
+
+## 📝 Notes
+
+- **No backend server needed** - everything is client-side
+- **No database** - uses browser's localStorage
+- **No authentication** - single device/browser only
+- **No network calls** - fully offline capable (after initial load)
+- **Data privacy** - all data stays on your device
+- **File sharing** - exchange game states and configs via JSON files
+
+## 🛠️ Development
+
+### First Time Setup
+```bash
+git clone <repo>
+cd web-monopoly-companion
+cd frontend
+npm install
+npm run dev
+```
+
+### Available Scripts
+```bash
+npm run dev       # Start dev server with hot-reload
+npm run build     # Production build
+npm run preview   # Preview production build locally
+npm run lint      # Check code quality
+```
+
+### How localStorage Works
+See `frontend/src/lib/storage.js` for the localStorage abstraction layer. All game state is stored in JSON under these keys:
+- `monopoly_game` - current game state
+- `monopoly_rolls` - dice roll history
+- `monopoly_actions` - game action log
+- `monopoly_properties` - property definitions
+- `monopoly_cards` - card definitions
+
+## 📄 License
+
+MIT
+
+---
+
+**Questions?** Open an issue on GitHub or check the Svelte/Vite documentation.

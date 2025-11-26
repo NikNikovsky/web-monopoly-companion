@@ -1,32 +1,32 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { postJSON, fetchJSON } from '../lib/api.js';
+  import * as storage from '../lib/storage.js';
+  
   const dispatch = createEventDispatcher();
 
-  let game = { players: [], currentTurn: 0 };
+  let game = { players: [], currentPlayer: 1 };
   let dice1 = 1, dice2 = 1;
   let hasRolled = false;
   let errorMsg = '';
   let manualMode = false;
 
-  async function loadGame() {
+  function loadGame() {
     try {
-      game = await fetchJSON('/api/game');
+      game = storage.getGame();
     } catch (e) {
       errorMsg = 'Failed to load game: ' + e.message;
     }
   }
 
-  async function doAutoRoll() {
+  function doAutoRoll() {
     errorMsg = '';
     if (!game.players.length) return errorMsg = 'No players in game';
     
     try {
-      const player = game.players[game.currentTurn];
-      const result = await postJSON('/api/roll', { count: 2, sides: 6, playerId: player.id });
-      dice1 = result.rolls[0];
-      dice2 = result.rolls[1];
+      dice1 = Math.floor(Math.random() * 6) + 1;
+      dice2 = Math.floor(Math.random() * 6) + 1;
       hasRolled = true;
+      storage.addRoll({ rolls: [dice1, dice2], sum: dice1 + dice2, timestamp: new Date().toISOString() });
     } catch (e) {
       errorMsg = 'Roll failed: ' + e.message;
     }
@@ -38,33 +38,28 @@
     }
     errorMsg = '';
     hasRolled = true;
+    storage.addRoll({ rolls: [dice1, dice2], sum: dice1 + dice2, timestamp: new Date().toISOString() });
   }
 
-  async function enterGame() {
+  function enterGame() {
     if (!hasRolled) return errorMsg = 'Please roll the dice first';
     
     try {
       errorMsg = '';
-      const player = game.players[game.currentTurn];
       const diceSum = dice1 + dice2;
       
-      console.log('Moving player:', { playerId: player.id, diceSum });
+      // Find current player and move them
+      const currentPlayer = game.players.find(p => p.id === game.currentPlayer);
+      if (!currentPlayer) throw new Error('Current player not found');
       
-      // Move the player
-      const moveResult = await postJSON('/api/game/move', { 
-        playerId: player.id, 
-        diceSum 
-      });
+      // Simple position update - in real Monopoly this would be more complex
+      currentPlayer.position = ((currentPlayer.position || 0) + diceSum) % 40;
       
-      console.log('Move result:', moveResult);
+      // Save updated game
+      storage.saveGame(game);
       
-      if (moveResult.ok) {
-        dispatch('rollDone');
-      } else {
-        errorMsg = 'Failed to move player: ' + (moveResult.error || 'unknown error');
-      }
+      dispatch('rollDone');
     } catch (e) {
-      console.error('Enter game error:', e);
       errorMsg = 'Error: ' + e.message;
     }
   }
@@ -72,7 +67,7 @@
   loadGame();
 </script>
 
-<h2>{game.players.length ? game.players[game.currentTurn]?.name : 'Loading'}... Ready?</h2>
+<h2>{game.players.length ? (game.players.find(p => p.id === game.currentPlayer)?.name || 'Unknown') : 'Loading'}... Ready?</h2>
 
 {#if errorMsg}
   <div style="color:red;background:#ffe0e0;padding:10px;border-radius:6px;margin-bottom:12px">{errorMsg}</div>

@@ -1,96 +1,80 @@
 <script>
-  import { fetchJSON, postJSON } from '../lib/api.js';
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
+  import * as storage from '../lib/storage.js';
+  
   const dispatch = createEventDispatcher();
   
-  let folders = {};
-  let selectedFolder = '';
   let selectedFile = '';
   let title = '';
   let items = [];
-  let sortBy = 'name'; // 'name' or 'value'
+  let sortBy = 'name';
+  let message = '';
+  
+  // Predefined config files from the config/ folders
+  const configFiles = {
+    properties: [
+      { name: 'classic.json', title: 'Classic Monopoly Properties (English)' },
+    ],
+    cards: [
+      { name: 'standard.json', title: 'Special Cards (English)' },
+    ]
+  };
 
-  async function loadFolders(){
-    console.log('loadFolders() called');
+  function getPropertyReference(item, allItems) {
+    // Generate property reference like "Yellow 1", "Yellow 2" based on color grouping
+    if (!item.color) return '';
+    
+    const colorGroup = allItems.filter(p => p.color === item.color);
+    const indexInColor = colorGroup.indexOf(item) + 1;
+    return `${item.color} ${indexInColor}`;
+  }
+
+  async function loadFile(filename, category) {
     try {
-      console.log('Attempting to fetch /api/config-folders');
-      const result = await fetchJSON('/api/config-folders');
-      console.log('Loaded folders from /api/config-folders:', result);
-      folders = result;
-      const folderKeys = Object.keys(folders);
-      console.log('Folder keys:', folderKeys);
-      if (folderKeys.length) {
-        selectedFolder = folderKeys[0];
-        console.log('Selected folder:', selectedFolder);
-      }
-    } catch (e) {
-      console.error('Failed to load from /api/config-folders, trying fallback:', e);
-      try {
-        console.log('Attempting fallback /api/configs');
-        const result = await fetchJSON('/api/configs');
-        console.log('Loaded from /api/configs fallback:', result);
-        folders = {
-          properties: { displayName: 'Property Cards', files: (result.properties || []).map(p => ({ name: p.name, title: p.title, folder: 'properties' })) },
-          cards: { displayName: 'Chance/Chest Cards', files: (result.cards || []).map(c => ({ name: c.name, title: c.title, folder: 'cards' })) }
+      let data;
+      
+      if (category === 'properties') {
+        const props = storage.getDefaultProperties();
+        // Load from the actual config file title
+        const fileData = {
+          title: 'Classic Monopoly Properties (English)',
+          properties: props
         };
-        console.log('Fallback folders:', folders);
-        if (Object.keys(folders).length) {
-          selectedFolder = 'properties';
-          console.log('Using fallback, selected folder: properties');
-        }
-      } catch (fallbackErr) {
-        console.error('Fallback also failed:', fallbackErr);
-        alert('Failed to load folders: ' + fallbackErr.message);
+        data = fileData;
+        items = data.properties || [];
+      } else if (category === 'cards') {
+        const cards = storage.getDefaultCards() || [];
+        // Load from the actual config file title
+        const fileData = {
+          title: 'Special Cards (English)',
+          cards: cards
+        };
+        data = fileData;
+        items = data.cards || [];
       }
+      
+      if (data) {
+        title = data.title;
+        selectedFile = filename;
+        message = 'Loaded: ' + (title || filename);
+        setTimeout(() => { message = ''; }, 3000);
+      }
+    } catch (err) {
+      alert('Failed to load: ' + err.message);
     }
   }
   
-  // Initialize folders immediately
-  loadFolders();
-  
-  let previousFolder = '';
-  
-  $: if (selectedFolder && selectedFolder !== previousFolder) {
-    previousFolder = selectedFolder;
-    selectedFile = '';
-    items = [];
+  function addItem() {
+    items.push({ name: 'New', value: 100, color: '' });
+    items = items;
   }
   
-  async function loadFile(){
-    if (!selectedFile || !selectedFolder) {
-      console.log('Cannot load - selectedFile:', selectedFile, 'selectedFolder:', selectedFolder);
-      return;
-    }
-    try {
-      console.log('Loading file:', selectedFile, 'from folder:', selectedFolder);
-      const cfg = await fetchJSON(`/api/configs/${encodeURIComponent(selectedFile)}`);
-      console.log('Loaded config:', cfg);
-      if (Array.isArray(cfg)) { 
-        items = cfg; 
-        title = selectedFile; 
-      }
-      else if (cfg && Array.isArray(cfg.cards)) { 
-        items = cfg.cards; 
-        title = cfg.title || selectedFile; 
-      }
-      else if (cfg && Array.isArray(cfg.properties)) { 
-        items = cfg.properties; 
-        title = cfg.title || selectedFile; 
-      }
-      else {
-        items = [];
-      }
-      console.log('Loaded items:', items);
-    } catch (e) {
-      console.error('Failed to load file:', e);
-      alert('Failed to load file: ' + e.message);
-    }
+  function removeItem(i) {
+    items.splice(i, 1);
+    items = items;
   }
   
-  function addItem(){ items.push({ name: 'New', value: 100, color: '' }); items = items; }
-  function removeItem(i){ items.splice(i,1); items = items; }
-  
-  function sortItems(){
+  function sortItems() {
     if (sortBy === 'name') {
       items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     } else if (sortBy === 'value') {
@@ -99,23 +83,53 @@
     items = items;
   }
   
-  async function save(){
-    const payload = { title, items };
-    // Detect if it's cards or properties based on folder
-    const key = selectedFolder === 'cards' ? 'cards' : 'properties';
-    const fullPayload = { title, [key]: items };
-    await fetch(`/api/configs/${encodeURIComponent(selectedFile)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fullPayload) });
-    alert('Saved');
+  function save() {
+    const data = { title, items };
+    const filename = selectedFile || 'config.json';
+    storage.exportToJSON(filename, data);
+    message = 'Downloaded: ' + filename;
+    setTimeout(() => { message = ''; }, 3000);
   }
   
-  async function saveAs(){
-    const prefix = selectedFolder === 'cards' ? 'cards' : 'properties';
-    const filename = `${prefix}-${Date.now()}.json`;
-    const key = selectedFolder === 'cards' ? 'cards' : 'properties';
-    const payload = { filename, title, [key]: items };
-    const r = await postJSON('/api/configs', payload);
-    alert('Saved as ' + r.name);
-    await loadFolders();
+  function saveAs() {
+    const filename = prompt('Enter filename:', `${title || 'config'}.json`);
+    if (!filename) return;
+    const data = { title, items };
+    storage.exportToJSON(filename, data);
+    message = 'Downloaded: ' + filename;
+    setTimeout(() => { message = ''; }, 3000);
+  }
+  
+  async function handleFileImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      // Handle both { items: [...] } and { properties: [...] } and { cards: [...] } formats
+      let itemsArray;
+      if (data.items && Array.isArray(data.items)) {
+        itemsArray = data.items;
+      } else if (data.properties && Array.isArray(data.properties)) {
+        itemsArray = data.properties;
+      } else if (data.cards && Array.isArray(data.cards)) {
+        itemsArray = data.cards;
+      }
+      
+      if (itemsArray) {
+        items = itemsArray;
+        title = data.title || file.name.replace('.json', '');
+        selectedFile = file.name;
+        message = 'Imported: ' + file.name;
+        setTimeout(() => { message = ''; }, 3000);
+      } else {
+        throw new Error('Invalid format: expected { title, items/properties/cards }');
+      }
+    } catch (err) {
+      alert('Failed to import: ' + err.message);
+    }
   }
 
 </script>
@@ -124,70 +138,87 @@
 
 <h2>Config Editor</h2>
 
-<div style="margin-bottom: 16px;">
-  <label style="display: block; margin-bottom: 8px;"><strong>Folder:</strong>
-    <select bind:value={selectedFolder} style="padding: 6px; font-size: 1em;">
-      <option value="">(select folder)</option>
-      {#each Object.entries(folders) as [key, folder]}
-        <option value={key}>{folder.displayName}</option>
-      {/each}
-    </select>
-    <small style="display: block; margin-top: 4px; color: #666;">Folders loaded: {Object.keys(folders).length}</small>
-  </label>
+{#if message}
+  <div style="margin-bottom: 12px; padding: 12px; background: #d4edda; color: #155724; border-radius: 4px; border: 1px solid #c3e6cb;">
+    {message}
+  </div>
+{/if}
 
-  {#if selectedFolder && folders[selectedFolder]}
-    {#if folders[selectedFolder].files && folders[selectedFolder].files.length > 0}
-      <label style="display: block; margin-bottom: 8px;"><strong>File:</strong>
-        <select bind:value={selectedFile} style="padding: 6px; font-size: 1em;">
-          <option value="">(select file)</option>
-          {#each folders[selectedFolder].files as f}
-            <option value={f.name}>{f.title || f.name}</option>
-          {/each}
-        </select>
-        <button on:click={loadFile} style="margin-left: 8px; padding: 6px 12px;">Load</button>
-      </label>
-    {:else}
-      <p style="color: red;">No files found in {folders[selectedFolder].displayName}</p>
-    {/if}
-  {/if}
+<div style="margin-bottom: 16px; border-bottom: 1px solid #ddd; padding-bottom: 12px;">
+  <h3>Available Configs</h3>
+  
+  <div style="margin-bottom: 12px;">
+    <strong>Property Sets:</strong><br>
+    {#each configFiles.properties as f}
+      <button on:click={() => loadFile(f.name, 'properties')} style="margin: 4px 4px 4px 0; padding: 6px 12px; background: {selectedFile === f.name ? '#2196f3' : '#eee'}; color: {selectedFile === f.name ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">
+        {f.title}
+      </button>
+    {/each}
+  </div>
+  
+  <div style="margin-bottom: 12px;">
+    <strong>Card Sets:</strong><br>
+    {#each configFiles.cards as f}
+      <button on:click={() => loadFile(f.name, 'cards')} style="margin: 4px 4px 4px 0; padding: 6px 12px; background: {selectedFile === f.name ? '#2196f3' : '#eee'}; color: {selectedFile === f.name ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">
+        {f.title}
+      </button>
+    {/each}
+  </div>
+  
+  <div>
+    <strong>Or import your own:</strong><br>
+    <label style="display: inline-block; margin-top: 8px; padding: 8px 16px; background: #4caf50; color: white; border-radius: 4px; cursor: pointer;">
+      Choose File
+      <input type="file" accept=".json" on:change={handleFileImport} style="display: none;" />
+    </label>
+  </div>
 </div>
 
-  {#if selectedFile}
-    <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center;">
-      <label>Title: <input bind:value={title} style="padding: 6px;" /></label>
-      <button on:click={addItem} style="padding: 6px 12px;">Add Item</button>
-      <button on:click={save} style="padding: 6px 12px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 4px;">Save</button>
-      <button on:click={saveAs} style="padding: 6px 12px; background: #ff9800; color: white; border: none; cursor: pointer; border-radius: 4px;">Save As</button>
-    </div>
+{#if selectedFile || items.length > 0}
+  <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center;">
+    <label>Title: <input bind:value={title} style="padding: 6px;" /></label>
+    <button on:click={addItem} style="padding: 6px 12px;">Add Item</button>
+    <button on:click={save} style="padding: 6px 12px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 4px;">Save</button>
+    <button on:click={saveAs} style="padding: 6px 12px; background: #ff9800; color: white; border: none; cursor: pointer; border-radius: 4px;">Save As</button>
+  </div>
 
-    <div style="margin-bottom: 12px;">
-      <label>Sort by: 
-        <select bind:value={sortBy} on:change={sortItems} style="padding: 6px;">
-          <option value="name">Name</option>
-          <option value="value">Value</option>
-        </select>
-      </label>
-    </div>
+  <div style="margin-bottom: 12px;">
+    <label>Sort by: 
+      <select bind:value={sortBy} on:change={sortItems} style="padding: 6px;">
+        <option value="name">Name</option>
+        <option value="value">Value</option>
+      </select>
+    </label>
+  </div>
 
-    {#each items as item, i}
-      <div style="margin: 8px 0; padding: 8px; border: 1px solid #ddd; border-radius: 4px; display: flex; gap: 8px; align-items: center;">
-        <input bind:value={item.name} placeholder="Name" style="flex: 1; padding: 6px;" />
-        {#if item.value !== undefined}
-          <input type="number" bind:value={item.value} placeholder="Value" style="width: 100px; padding: 6px;" />
-        {/if}
-        {#if item.color !== undefined}
-          <input bind:value={item.color} placeholder="Color" style="width: 120px; padding: 6px;" />
-        {/if}
-        {#if item.type !== undefined}
-          <input bind:value={item.type} placeholder="Type" style="width: 120px; padding: 6px;" />
-        {/if}
-        {#if item.amount !== undefined}
-          <input type="number" bind:value={item.amount} placeholder="Amount" style="width: 100px; padding: 6px;" />
-        {/if}
-        <button on:click={() => removeItem(i)} style="padding: 6px 12px; background: #e74c3c; color: white; border: none; cursor: pointer; border-radius: 4px;">Remove</button>
-      </div>
-    {/each}
-  {/if}
+  {#each items as item, i}
+    <div style="margin: 8px 0; padding: 8px; border: 1px solid #ddd; border-radius: 4px; display: flex; gap: 8px; align-items: center;">
+      {#if getPropertyReference(item, items)}
+        <div style="min-width: 90px; font-weight: bold; color: #666; background: #f5f5f5; padding: 4px 8px; border-radius: 3px; font-size: 0.9em;">
+          {getPropertyReference(item, items)}
+        </div>
+      {/if}
+      <input bind:value={item.name} placeholder="Name" style="flex: 1; padding: 6px;" />
+      {#if item.value !== undefined}
+        <input type="number" bind:value={item.value} placeholder="Value" style="width: 100px; padding: 6px;" />
+      {/if}
+      {#if item.color !== undefined}
+        <input bind:value={item.color} placeholder="Color" style="width: 120px; padding: 6px;" />
+      {/if}
+      {#if item.type !== undefined}
+        <input bind:value={item.type} placeholder="Type" style="width: 120px; padding: 6px;" />
+      {/if}
+      {#if item.amount !== undefined}
+        <input type="number" bind:value={item.amount} placeholder="Amount" style="width: 100px; padding: 6px;" />
+      {/if}
+      <button on:click={() => removeItem(i)} style="padding: 6px 12px; background: #e74c3c; color: white; border: none; cursor: pointer; border-radius: 4px;">Remove</button>
+    </div>
+  {/each}
+{:else}
+  <div style="padding: 20px; text-align: center; color: #666;">
+    <p>Select a config above to get started.</p>
+  </div>
+{/if}
 
 
 

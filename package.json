@@ -1,20 +1,13 @@
 {
   "name": "web-monopoly-companion",
   "version": "0.1.0",
-  "description": "Web-only Monopoly companion: dice, manual rolls, editable card names (config in JSON).",
-  "main": "server.js",
+  "description": "Web-only Monopoly companion: dice, manual rolls, editable card names. Runs entirely in the browser using localStorage.",
   "scripts": {
-    "start": "node server.js",
-    "dev": "concurrently \"node server.js\" \"cd frontend && npm run dev\"",
-    "build-frontend": "cd frontend && npm run build"
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview"
   },
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "express": "^5.1.0"
-  }
-  ,
-  "devDependencies": {
-    "concurrently": "^9.2.1"
-  }
+  "keywords": ["monopoly", "board-game", "companion", "svelte"]
 }

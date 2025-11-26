@@ -1,26 +1,33 @@
 <script>
-  import { fetchJSON, postJSON } from '../lib/api.js';
+  import * as storage from '../lib/storage.js';
+  
   let count = 2, sides = 6;
   let last = null;
   let rolls = [];
 
-  async function doRoll(){
-    last = await postJSON('/api/roll', { count, sides });
-    rolls.unshift(last);
+  function doRoll(){
+    const rollArray = Array.from({length: count}, () => Math.floor(Math.random() * sides) + 1);
+    const sum = rollArray.reduce((a,b) => a+b, 0);
+    last = { rolls: rollArray, sum, timestamp: new Date().toISOString() };
+    storage.addRoll(last);
+    rolls = storage.getRolls().slice().reverse();
   }
 
-  async function logManual(){
+  function logManual(){
     const text = prompt('Enter rolls comma separated, e.g. 3,4');
     if (!text) return;
     const arr = text.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
-    await postJSON('/api/log-roll', { rolls: arr, note: '' });
-    const hist = await fetchJSON('/api/rolls');
-    rolls = hist.slice().reverse();
+    const sum = arr.reduce((a,b) => a+b, 0);
+    storage.addRoll({ rolls: arr, sum, timestamp: new Date().toISOString() });
+    rolls = storage.getRolls().slice().reverse();
   }
 
-  const init = async () => {
-    try { rolls = (await fetchJSON('/api/rolls')).slice().reverse(); } catch(e){}
+  const init = () => {
+    try { 
+      rolls = storage.getRolls().slice().reverse(); 
+    } catch(e){}
   }
+  
   init();
 </script>
 
@@ -36,6 +43,6 @@
 <h3>History</h3>
 <ul>
   {#each rolls as r}
-    <li>{new Date(r.timestamp).toLocaleString()}: {r.rolls.join(', ')} (sum {r.sum}) {r.note ? '- ' + r.note : ''}</li>
+    <li>{new Date(r.timestamp).toLocaleString()}: {r.rolls.join(', ')} (sum {r.sum})</li>
   {/each}
 </ul>
