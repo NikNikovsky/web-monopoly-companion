@@ -1,6 +1,6 @@
 <script>
   import { fetchJSON, postJSON } from '../lib/api.js';
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   const dispatch = createEventDispatcher();
   
   let folders = {};
@@ -11,33 +11,60 @@
   let sortBy = 'name'; // 'name' or 'value'
 
   async function loadFolders(){
+    console.log('loadFolders() called');
     try {
+      console.log('Attempting to fetch /api/config-folders');
       const result = await fetchJSON('/api/config-folders');
-      console.log('Loaded folders:', result);
+      console.log('Loaded folders from /api/config-folders:', result);
       folders = result;
       const folderKeys = Object.keys(folders);
-      if (folderKeys.length) selectedFolder = folderKeys[0];
+      console.log('Folder keys:', folderKeys);
+      if (folderKeys.length) {
+        selectedFolder = folderKeys[0];
+        console.log('Selected folder:', selectedFolder);
+      }
     } catch (e) {
-      console.error('Failed to load folders:', e);
-      // Fallback to old endpoint
-      const result = await fetchJSON('/api/configs');
-      folders = {
-        properties: { displayName: 'Property Cards', files: (result.properties || []) },
-        cards: { displayName: 'Chance/Chest Cards', files: (result.cards || []) }
-      };
-      if (Object.keys(folders).length) selectedFolder = 'properties';
+      console.error('Failed to load from /api/config-folders, trying fallback:', e);
+      try {
+        console.log('Attempting fallback /api/configs');
+        const result = await fetchJSON('/api/configs');
+        console.log('Loaded from /api/configs fallback:', result);
+        folders = {
+          properties: { displayName: 'Property Cards', files: (result.properties || []).map(p => ({ name: p.name, title: p.title, folder: 'properties' })) },
+          cards: { displayName: 'Chance/Chest Cards', files: (result.cards || []).map(c => ({ name: c.name, title: c.title, folder: 'cards' })) }
+        };
+        console.log('Fallback folders:', folders);
+        if (Object.keys(folders).length) {
+          selectedFolder = 'properties';
+          console.log('Using fallback, selected folder: properties');
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback also failed:', fallbackErr);
+        alert('Failed to load folders: ' + fallbackErr.message);
+      }
     }
   }
   
-  $: if (selectedFolder && folders[selectedFolder]) {
+  // Initialize folders immediately
+  loadFolders();
+  
+  let previousFolder = '';
+  
+  $: if (selectedFolder && selectedFolder !== previousFolder) {
+    previousFolder = selectedFolder;
     selectedFile = '';
     items = [];
   }
   
   async function loadFile(){
-    if (!selectedFile || !selectedFolder) return;
+    if (!selectedFile || !selectedFolder) {
+      console.log('Cannot load - selectedFile:', selectedFile, 'selectedFolder:', selectedFolder);
+      return;
+    }
     try {
+      console.log('Loading file:', selectedFile, 'from folder:', selectedFolder);
       const cfg = await fetchJSON(`/api/configs/${encodeURIComponent(selectedFile)}`);
+      console.log('Loaded config:', cfg);
       if (Array.isArray(cfg)) { 
         items = cfg; 
         title = selectedFile; 
@@ -53,9 +80,10 @@
       else {
         items = [];
       }
+      console.log('Loaded items:', items);
     } catch (e) {
       console.error('Failed to load file:', e);
-      alert('Failed to load file');
+      alert('Failed to load file: ' + e.message);
     }
   }
   
@@ -90,7 +118,6 @@
     await loadFolders();
   }
 
-  loadFolders();
 </script>
 
 <button on:click={() => dispatch('exitEditor')} style="margin-bottom: 16px; padding: 8px 16px; background: #2196f3; color: white; border: none; cursor: pointer; border-radius: 4px;">← Back</button>
@@ -105,17 +132,23 @@
         <option value={key}>{folder.displayName}</option>
       {/each}
     </select>
+    <small style="display: block; margin-top: 4px; color: #666;">Folders loaded: {Object.keys(folders).length}</small>
   </label>
 
   {#if selectedFolder && folders[selectedFolder]}
-    <label style="display: block; margin-bottom: 8px;"><strong>File:</strong>
-      <select bind:value={selectedFile} on:change={loadFile} style="padding: 6px; font-size: 1em;">
-        <option value="">(select file)</option>
-        {#each folders[selectedFolder].files as f}
-          <option value={f.name}>{f.title || f.name}</option>
-        {/each}
-      </select>
-    </label>
+    {#if folders[selectedFolder].files && folders[selectedFolder].files.length > 0}
+      <label style="display: block; margin-bottom: 8px;"><strong>File:</strong>
+        <select bind:value={selectedFile} style="padding: 6px; font-size: 1em;">
+          <option value="">(select file)</option>
+          {#each folders[selectedFolder].files as f}
+            <option value={f.name}>{f.title || f.name}</option>
+          {/each}
+        </select>
+        <button on:click={loadFile} style="margin-left: 8px; padding: 6px 12px;">Load</button>
+      </label>
+    {:else}
+      <p style="color: red;">No files found in {folders[selectedFolder].displayName}</p>
+    {/if}
   {/if}
 </div>
 
