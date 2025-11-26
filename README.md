@@ -1,6 +1,6 @@
 # web-monopoly-companion
 
-Minimal web-based Monopoly companion: roll dice, log manual rolls, and edit property and card names via the `config/` JSON files.
+Minimal web-based Monopoly companion: manage players, roll dice, track property ownership, and edit configuration via an interactive UI or JSON files.
 
 ## Quick Start
 
@@ -37,34 +37,36 @@ pkill -f "node server"
 
 ## Data & Config
 
-- `config/properties.json`: property cards and values used by the game (editable via UI or directly)
-- `data/game.json`: current game state (players, ownership, currentTurn)
-- `data/actions.json`: action log (who bought which property and when, turn changes)
+- `config/properties/`: property card configurations (JSON files with display names)
+- `config/cards/`: chance/chest card configurations (JSON files with display names)
+- `data/game.json`: current game state (players, positions, ownership, currentTurn)
+- `data/actions.json`: action log (who bought which property, turn changes, etc.)
 - `data/actions.log`: append-only human-readable text log
 - `data/rolls.json`: stored roll history
 
 ## Features
 
 ### Game Management
-- Create games with multiple players
-- Perform automated or manual rolloff to determine first player
-- Roll dice during gameplay with countdown timer
-- Buy properties (1 per turn limit)
-- Buy and upgrade houses/hotels
-- Transfer money between players
-- View game history and action logs
+- **Create Game**: Set number of players, names, starting cash
+- **Select Config**: Choose property and card configurations before game starts
+- **Dice Rolling**: Roll dice with countdown timer, auto-progresses player turns
+- **Property Management**: Buy properties during your turn
+- **House/Hotel Building**: Upgrade properties with houses and hotels
+- **Money Transfer**: Move cash between players
+- **Game Editor**: Modify game state during gameplay via the Editor tab
 
-### Configuration
-- Edit `config/properties.json` to customize properties and values
-- House cost: `max(50, round(propertyValue * 0.5))`
-- Hotel cost: `max(50, round(propertyValue * 1.5))`
-- 5 houses on a property indicates a hotel
+### Configuration Editor
+- Load property and card configurations from JSON files
+- Edit names, values, colors, and properties in real-time
+- Save changes back to files or create new configurations
+- Sort items by name or value for easier editing
 
 ### Visuals
 - Color-coded property bars for quick identification
 - 30-second countdown timer after each dice roll
 - Responsive UI for all screen sizes
 - Real-time game state synchronization
+- Tab-based navigation (Players, Game Board, Editor)
 
 ## Technology Stack
 
@@ -84,3 +86,4 @@ pkill -f "node server"
 - No database required - file-based persistence
 - Security headers included for safety
 - Strict file system access controls in development
+- Both production and development modes serve the frontend from the built files in `public/`
