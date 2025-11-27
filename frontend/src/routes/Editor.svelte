@@ -35,13 +35,15 @@
       
       if (category === 'properties') {
         // Load from config file
-        const response = await fetch(`/config/properties/${filename}`);
+        const basePath = import.meta.env.BASE_URL || '/';
+        const response = await fetch(`${basePath}config/properties/${filename}`);
         if (!response.ok) throw new Error('Failed to load config file');
         data = await response.json();
         items = data.properties || [];
       } else if (category === 'cards') {
         // Load from config file
-        const response = await fetch(`/config/cards/${filename}`);
+        const basePath = import.meta.env.BASE_URL || '/';
+        const response = await fetch(`${basePath}config/cards/${filename}`);
         if (!response.ok) throw new Error('Failed to load config file');
         data = await response.json();
         items = data.cards || [];

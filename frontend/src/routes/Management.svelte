@@ -53,7 +53,8 @@
 
   async function loadPropertiesFromFile(filename) {
     try {
-      const response = await fetch(`/config/properties/${filename}`);
+      const basePath = import.meta.env.BASE_URL || '/';
+      const response = await fetch(`${basePath}config/properties/${filename}`);
       if (!response.ok) {
         // Fallback to default if file not found
         properties = storage.getDefaultProperties();
@@ -81,7 +82,7 @@
     return game.players.find(p => p.id === game.currentPlayer);
   }
 
-  function buy(prop){
+  async function buy(prop){
     const player = getCurrentPlayer();
     if (!player) return showError('No current player');
     try{
@@ -105,7 +106,7 @@
       
       storage.saveGame(game);
       storage.setActions(actions);
-      loadAll();
+      await loadAll();
     }catch(e){ showError(`Buy failed: ${e.message}`); }
   }
 
@@ -122,7 +123,7 @@
     return true;
   }
 
-  function buyHouse(prop){
+  async function buyHouse(prop){
     const player = getCurrentPlayer();
     const houseCount = housesCount(prop);
     const houseCost = 50;
@@ -153,12 +154,12 @@
       
       storage.saveGame(game);
       storage.setActions(actions);
-      loadAll();
+      await loadAll();
     }
     catch(e){ showError(`Buy house failed: ${e.message}`); }
   }
 
-  function removeHouse(prop) {
+  async function removeHouse(prop){
     const player = getCurrentPlayer();
     try {
       const houseCount = housesCount(prop);
@@ -184,13 +185,13 @@
       
       storage.saveGame(game);
       storage.setActions(actions);
-      loadAll();
+      await loadAll();
     } catch (e) {
       showError(`Remove house failed: ${e.message}`);
     }
   }
 
-  function mortgage(prop) {
+  async function mortgage(prop) {
     const player = getCurrentPlayer();
     try {
       if (!player) return showError('No current player found');
@@ -216,13 +217,13 @@
       
       storage.saveGame(game);
       storage.setActions(actions);
-      loadAll();
+      await loadAll();
     } catch (e) {
       showError(`Mortgage failed: ${e.message}`);
     }
   }
 
-  function unmortgage(prop) {
+  async function unmortgage(prop) {
     const player = getCurrentPlayer();
     const unmortgageCost = Math.ceil(prop.mortgageValue * 1.1);
     try {
@@ -244,13 +245,13 @@
       
       storage.saveGame(game);
       storage.setActions(actions);
-      loadAll();
+      await loadAll();
     } catch (e) {
       showError(`Unmortgage failed: ${e.message}`);
     }
   }
 
-  function doTransfer(){
+  async function doTransfer(){
     try{
       const fromPlayer = game.players.find(p => p.id === Number(fromId));
       const toPlayer = game.players.find(p => p.id === Number(toId));
@@ -272,19 +273,19 @@
       
       storage.saveGame(game);
       storage.setActions(actions);
-      loadAll();
+      await loadAll();
     } catch (e) {
       showError(`Transfer failed: ${e.message}`);
     }
   }
 
-  function endTurn(){
+  async function endTurn(){
     try {
       game.purchasedThisTurn = null; // Reset purchase limit for next turn
       const currentIdx = game.players.findIndex(p => p.id === game.currentPlayer);
       game.currentPlayer = game.players[(currentIdx + 1) % game.players.length].id;
       storage.saveGame(game);
-      loadAll();
+      await loadAll();
       dispatch('turnEnd');
     } catch (e) {
       showError(`End turn failed: ${e.message}`);
