@@ -1,17 +1,7 @@
-# web-monopoly-companion
+# Monopoly Web Companion
 
 A **100% browser-based** Monopoly companion app - no backend needed! Play Monopoly with an interactive interface, manage players, roll dice, buy properties, and edit custom configurations. Everything runs locally in your browser using localStorage.
-
-## Quick Start
-
-### Development
-```bash
-cd frontend
-npm install
-npm run dev
-# Frontend: http://localhost:5173
-# Backend: http://localhost:3000
-```
+You can play it here (TODO: Get Pages working)
 ## Features
 
 ### Game Management
@@ -79,7 +69,7 @@ web-monopoly-companion/
 ## 🚀 How to Use
 
 ### Playing a Game
-1. Click **"Number"** - Select 2-8 players
+1. Click **"Number"** - Select 2-8 phkem93htBTlwiEWv5fhXiMlErKXvJNSgko4K9SDRlayers
 2. Click **"Players"** - Enter player names
 3. Click **"Starting Cash"** - Set initial money (default $1500)
 4. Click **"Create Game"** - Start the game
@@ -174,10 +164,6 @@ See `frontend/src/lib/storage.js` for the localStorage abstraction layer. All ga
 - `monopoly_actions` - game action log
 - `monopoly_properties` - property definitions
 - `monopoly_cards` - card definitions
-
-## 📄 License
-
-MIT
 
 ---
 
