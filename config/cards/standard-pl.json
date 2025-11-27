@@ -147,16 +147,16 @@
     },
     {
       "id": "renovation-1",
-      "name": "Musisz zapłacić za remonty",
+      "name": "Przeprowadzasz generalny remont wszystkich nieruchomości",
       "description": "25M za dom, 100M za hotel",
       "type": "renovation",
-      "category": "Community Chest",
+      "category": "Chance",
       "houseCost": 25,
       "hotelCost": 100
     },
     {
       "id": "renovation-2",
-      "name": "Musisz zapłacić za naprawy ulic",
+      "name": "Obliczono koszt napraw komunalnych twoich nieruchomości",
       "description": "40M za dom, 115M za hotel",
       "type": "renovation",
       "category": "Community Chest",
