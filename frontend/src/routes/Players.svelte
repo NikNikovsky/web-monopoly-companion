@@ -20,7 +20,7 @@
   let rolloffCountdown = 0;
   let showRolloffResults = false;
   let selectedPropertySet = 'classic-en.json';
-  let selectedCardSet = 'standard.json';
+  let selectedCardSet = 'standard-en.json';
 
   const checkExistingGame = () => {
     try {
@@ -286,7 +286,8 @@
       <label style="display: block; margin-bottom: 12px;">
         <strong>Card Set:</strong><br>
         <select bind:value={selectedCardSet} style="margin-top: 8px; padding: 8px; width: 100%; max-width: 400px;">
-          <option value="standard.json">Special Cards (English)</option>
+          <option value="standard-en.json">Special Cards (English)</option>
+          <option value="standard-pl.json">Special Cards (Polish)</option>
         </select>
       </label>
       <p><small>Use the Config Editor tab to create and customize different property and card sets.</small></p>

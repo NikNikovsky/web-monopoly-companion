@@ -136,6 +136,20 @@ export function getCards() {
   return getDefaultCards();
 }
 
+export async function loadCardsFromFile(filename) {
+  try {
+    const basePath = import.meta.env.BASE_URL || '/';
+    const url = `${basePath}config/cards/${filename}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to load cards: ${response.status}`);
+    const data = await response.json();
+    return data.cards || [];
+  } catch (error) {
+    console.error('Error loading cards from file:', error);
+    return getDefaultCards();
+  }
+}
+
 export function setCards(cards) {
   localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(cards));
 }

@@ -30,6 +30,10 @@
       const freshGame = storage.getGame();
       game = { ...freshGame };
       drawnCard = game.drawnCard || null;
+      
+      // Load cards from the selected card set
+      const cardSetFile = game.cardSet || 'standard-en.json';
+      cardDeck = await storage.loadCardsFromFile(cardSetFile);
     } catch (e) {
       showError('Failed to load game: ' + e.message);
     }
@@ -45,8 +49,7 @@
       if (!player) return showError('No current player found');
 
       // Randomly select a card from the appropriate deck
-      const cards = storage.getDefaultCards();
-      const deckCards = cards.filter(c => c.category === deckType);
+      const deckCards = cardDeck.filter(c => c.category === deckType);
       
       if (deckCards.length === 0) {
         return showError(`No ${deckType} cards available`);
