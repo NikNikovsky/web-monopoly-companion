@@ -150,6 +150,62 @@ export async function loadCardsFromFile(filename) {
   }
 }
 
+export async function getAvailableCardSets() {
+  // List of known card set files
+  const cardSets = ['standard-en.json', 'standard-pl.json'];
+  const basePath = import.meta.env.BASE_URL || '/';
+  const available = [];
+
+  for (const filename of cardSets) {
+    try {
+      const url = `${basePath}config/cards/${filename}`;
+      const response = await fetch(url, { method: 'HEAD' });
+      if (response.ok) {
+        const dataResponse = await fetch(url);
+        const data = await dataResponse.json();
+        available.push({
+          filename,
+          title: data.title || filename
+        });
+      }
+    } catch (error) {
+      // File not found, skip
+    }
+  }
+
+  return available.length > 0 ? available : [
+    { filename: 'standard-en.json', title: 'Special Cards (English)' }
+  ];
+}
+
+export async function getAvailablePropertySets() {
+  // List of known property set files
+  const propertySets = ['classic-en.json', 'classic-pl.json'];
+  const basePath = import.meta.env.BASE_URL || '/';
+  const available = [];
+
+  for (const filename of propertySets) {
+    try {
+      const url = `${basePath}config/properties/${filename}`;
+      const response = await fetch(url, { method: 'HEAD' });
+      if (response.ok) {
+        const dataResponse = await fetch(url);
+        const data = await dataResponse.json();
+        available.push({
+          filename,
+          title: data.title || filename
+        });
+      }
+    } catch (error) {
+      // File not found, skip
+    }
+  }
+
+  return available.length > 0 ? available : [
+    { filename: 'classic-en.json', title: 'Classic Monopoly Properties (English)' }
+  ];
+}
+
 export function setCards(cards) {
   localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(cards));
 }

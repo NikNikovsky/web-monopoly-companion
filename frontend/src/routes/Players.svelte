@@ -21,6 +21,25 @@
   let showRolloffResults = false;
   let selectedPropertySet = 'classic-en.json';
   let selectedCardSet = 'standard-en.json';
+  let availablePropertySets = [];
+  let availableCardSets = [];
+
+  async function loadAvailableSets() {
+    try {
+      availablePropertySets = await storage.getAvailablePropertySets();
+      availableCardSets = await storage.getAvailableCardSets();
+      
+      // Set defaults from first available set if they exist
+      if (availablePropertySets.length > 0 && !selectedPropertySet) {
+        selectedPropertySet = availablePropertySets[0].filename;
+      }
+      if (availableCardSets.length > 0 && !selectedCardSet) {
+        selectedCardSet = availableCardSets[0].filename;
+      }
+    } catch (error) {
+      console.error('Error loading available sets:', error);
+    }
+  }
 
   const checkExistingGame = () => {
     try {
@@ -225,6 +244,7 @@
   const init = () => {
     loadGame();
     checkExistingGame();
+    loadAvailableSets();
   }
 
   init();
@@ -279,15 +299,17 @@
       <label style="display: block; margin-bottom: 12px;">
         <strong>Property Set:</strong><br>
         <select bind:value={selectedPropertySet} style="margin-top: 8px; padding: 8px; width: 100%; max-width: 400px;">
-          <option value="classic-en.json">Classic Monopoly Properties (English)</option>
-          <option value="classic-pl.json">Classic Monopoly Properties (Polish)</option>
+          {#each availablePropertySets as set}
+            <option value={set.filename}>{set.title}</option>
+          {/each}
         </select>
       </label>
       <label style="display: block; margin-bottom: 12px;">
         <strong>Card Set:</strong><br>
         <select bind:value={selectedCardSet} style="margin-top: 8px; padding: 8px; width: 100%; max-width: 400px;">
-          <option value="standard-en.json">Special Cards (English)</option>
-          <option value="standard-pl.json">Special Cards (Polish)</option>
+          {#each availableCardSets as set}
+            <option value={set.filename}>{set.title}</option>
+          {/each}
         </select>
       </label>
       <p><small>Use the Config Editor tab to create and customize different property and card sets.</small></p>
