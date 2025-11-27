@@ -18,7 +18,7 @@
       "houseCost": 50
     },
     {
-      "name": "Radzymińska",
+      "name": "Ulica Radzymińska",
       "value": 100,
       "color": "Light Blue",
       "mortgageValue": 50,
@@ -42,7 +42,7 @@
       "houseCost": 50
     },
     {
-      "name": "St. Charles Place",
+      "name": "Ulica Płowiecka",
       "value": 140,
       "color": "Pink",
       "mortgageValue": 70,
@@ -50,7 +50,7 @@
       "houseCost": 100
     },
     {
-      "name": "States Avenue",
+      "name": "Ulica Marsa",
       "value": 140,
       "color": "Pink",
       "mortgageValue": 70,
@@ -58,7 +58,7 @@
       "houseCost": 100
     },
     {
-      "name": "Virginia Avenue",
+      "name": "Ulica Grochowska",
       "value": 160,
       "color": "Pink",
       "mortgageValue": 80,
@@ -66,7 +66,7 @@
       "houseCost": 100
     },
     {
-      "name": "St. James Place",
+      "name": "Ulica Obozowa",
       "value": 180,
       "color": "Orange",
       "mortgageValue": 90,
@@ -74,7 +74,7 @@
       "houseCost": 100
     },
     {
-      "name": "Tennessee Avenue",
+      "name": "Ulica Górczewska",
       "value": 180,
       "color": "Orange",
       "mortgageValue": 90,
@@ -82,7 +82,7 @@
       "houseCost": 100
     },
     {
-      "name": "New York Avenue",
+      "name": "Ulica Wolska",
       "value": 200,
       "color": "Orange",
       "mortgageValue": 100,
@@ -90,7 +90,7 @@
       "houseCost": 100
     },
     {
-      "name": "Kentucky Avenue",
+      "name": "Ulica Mickiewicza",
       "value": 220,
       "color": "Red",
       "mortgageValue": 110,
@@ -98,7 +98,7 @@
       "houseCost": 150
     },
     {
-      "name": "Indiana Avenue",
+      "name": "Ulica Słowackiego",
       "value": 220,
       "color": "Red",
       "mortgageValue": 110,
@@ -106,7 +106,7 @@
       "houseCost": 150
     },
     {
-      "name": "Illinois Avenue",
+      "name": "Plac Wilsona",
       "value": 240,
       "color": "Red",
       "mortgageValue": 120,
@@ -114,7 +114,7 @@
       "houseCost": 150
     },
     {
-      "name": "Atlantic Avenue",
+      "name": "Ulica Świętokrzyska",
       "value": 260,
       "color": "Yellow",
       "mortgageValue": 130,
@@ -122,7 +122,7 @@
       "houseCost": 150
     },
     {
-      "name": "Ventnor Avenue",
+      "name": "Krakowskie Przedmieście",
       "value": 260,
       "color": "Yellow",
       "mortgageValue": 130,
@@ -130,7 +130,7 @@
       "houseCost": 150
     },
     {
-      "name": "Marvin Gardens",
+      "name": "Nowy Świat",
       "value": 280,
       "color": "Yellow",
       "mortgageValue": 140,
@@ -138,7 +138,7 @@
       "houseCost": 150
     },
     {
-      "name": "Pacific Avenue",
+      "name": "Plac Trzech Krzyży",
       "value": 300,
       "color": "Green",
       "mortgageValue": 150,
@@ -146,7 +146,7 @@
       "houseCost": 200
     },
     {
-      "name": "North Carolina Avenue",
+      "name": "Ulica Marszałkowska",
       "value": 300,
       "color": "Green",
       "mortgageValue": 150,
@@ -154,7 +154,7 @@
       "houseCost": 200
     },
     {
-      "name": "Pennsylvania Avenue",
+      "name": "Aleje Jerozolimskie",
       "value": 320,
       "color": "Green",
       "mortgageValue": 160,
@@ -162,15 +162,15 @@
       "houseCost": 200
     },
     {
-      "name": "Park Place",
+      "name": "Ulica Belwederska",
       "value": 350,
       "color": "Dark Blue",
       "mortgageValue": 175,
-      "unmortgageValue": 192,
+      "unmortgageValue": 193,
       "houseCost": 200
     },
     {
-      "name": "Boardwalk",
+      "name": "Aleje Ujazdowskie",
       "value": 400,
       "color": "Dark Blue",
       "mortgageValue": 200,
@@ -178,7 +178,7 @@
       "houseCost": 200
     },
     {
-      "name": "Reading Railroad",
+      "name": "Dworzec Zachodni",
       "value": 200,
       "color": "Railroad",
       "mortgageValue": 100,
@@ -186,7 +186,7 @@
       "canHaveHouses": false
     },
     {
-      "name": "Pennsylvania Railroad",
+      "name": "Dworzec Centralny",
       "value": 200,
       "color": "Railroad",
       "mortgageValue": 100,
@@ -194,7 +194,7 @@
       "canHaveHouses": false
     },
     {
-      "name": "B. & O. Railroad",
+      "name": "Dworzec Wschodni",
       "value": 200,
       "color": "Railroad",
       "mortgageValue": 100,
@@ -202,7 +202,7 @@
       "canHaveHouses": false
     },
     {
-      "name": "Short Line",
+      "name": "Dworzec Gdański",
       "value": 200,
       "color": "Railroad",
       "mortgageValue": 100,
@@ -210,7 +210,7 @@
       "canHaveHouses": false
     },
     {
-      "name": "Electric Company",
+      "name": "Elektrownia",
       "value": 150,
       "color": "Utility",
       "mortgageValue": 75,
@@ -218,7 +218,7 @@
       "canHaveHouses": false
     },
     {
-      "name": "Water Works",
+      "name": "Wodociągi",
       "value": 150,
       "color": "Utility",
       "mortgageValue": 75,
