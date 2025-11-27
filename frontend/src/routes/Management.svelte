@@ -3,11 +3,12 @@
   import * as storage from '../lib/storage.js';
   
   const dispatch = createEventDispatcher();
-  let game = { players: [], currentPlayer: 1, ownership: {}, houses: {}, mortgaged: {} };
+  let game = { players: [], currentPlayer: 1, ownership: {}, houses: {}, mortgaged: {}, purchasedThisTurn: null };
   let properties = [];
   let actions = [];
   let errorMsg = '';
   let showErrorModal = false;
+  let currentPlayerData = null;
   
   let fromId = null, toId = null, amount = 0, note = '';
   let activeTab = 'properties';
@@ -29,9 +30,13 @@
 
   function loadAll(){
     try {
-      game = storage.getGame();
+      const freshGame = storage.getGame();
+      game = { ...freshGame }; // Create new object reference for reactivity
       properties = storage.getDefaultProperties();
       actions = storage.getActions() || [];
+      
+      // Update current player display data
+      currentPlayerData = { ...getCurrentPlayer() };
       
       if (game.players.length){
         fromId = game.players[0].id;
@@ -60,12 +65,14 @@
     const player = getCurrentPlayer();
     if (!player) return showError('No current player');
     try{
+      if (game.purchasedThisTurn) return showError('You can only buy one property per turn');
       if (player.cash < prop.value) return showError(`Insufficient funds: need $${prop.value}, have $${player.cash}`);
       player.cash -= prop.value;
       player.properties = player.properties || [];
       player.properties.push(prop.name);
       game.ownership = game.ownership || {};
       game.ownership[prop.name] = player.id;
+      game.purchasedThisTurn = prop.name;
       
       const action = {
         type: 'buy',
@@ -82,23 +89,44 @@
     }catch(e){ showError(`Buy failed: ${e.message}`); }
   }
 
+  function canBuildHouse(prop) {
+    // Check if all properties in this color group have equal or one fewer house
+    const colorGroup = properties.filter(p => p.color === prop.color && p.canHaveHouses !== false);
+    const myCount = housesCount(prop);
+    
+    for (let p of colorGroup) {
+      if (p.name === prop.name) continue;
+      const pCount = housesCount(p);
+      if (pCount < myCount) return false; // Another property has fewer houses
+    }
+    return true;
+  }
+
   function buyHouse(prop){
     const player = getCurrentPlayer();
     const houseCount = housesCount(prop);
     const houseCost = 50;
+    const isHotel = houseCount === 4;
     try{ 
+      if (prop.canHaveHouses === false) return showError('Cannot place houses on this property');
+      if (houseCount >= 5) return showError('Already have a hotel');
+      if (!canBuildHouse(prop)) return showError('Must build evenly: other properties in this color have fewer houses');
       if (player.cash < houseCost) return showError(`Insufficient funds: need $${houseCost}`);
-      if (houseCount >= 4) return showError('Already have 4 houses');
       
       player.cash -= houseCost;
       game.houses = game.houses || {};
-      game.houses[prop.name] = (game.houses[prop.name] || 0) + 1;
+      if (isHotel) {
+        game.houses[prop.name] = 'H'; // 'H' represents hotel
+      } else {
+        game.houses[prop.name] = (game.houses[prop.name] || 0) + 1;
+      }
       
       const action = {
         type: 'build',
         playerName: player.name,
         property: prop.name,
         amount: houseCost,
+        item: isHotel ? 'hotel' : 'house',
         timestamp: new Date().toISOString()
       };
       actions.push(action);
@@ -115,7 +143,13 @@
     try {
       const houseCount = housesCount(prop);
       if (houseCount <= 0) return showError('No houses to remove');
-      game.houses[prop.name] = (game.houses[prop.name] || 1) - 1;
+      
+      const isHotel = houseCount === 5;
+      if (isHotel) {
+        game.houses[prop.name] = 4; // Convert hotel back to 4 houses
+      } else {
+        game.houses[prop.name] = (game.houses[prop.name] || 1) - 1;
+      }
       player.cash += 25;
       
       const action = {
@@ -123,6 +157,7 @@
         playerName: player.name,
         property: prop.name,
         amount: 25,
+        item: isHotel ? 'hotel' : 'house',
         timestamp: new Date().toISOString()
       };
       actions.push(action);
@@ -132,6 +167,66 @@
       loadAll();
     } catch (e) {
       showError(`Remove house failed: ${e.message}`);
+    }
+  }
+
+  function mortgage(prop) {
+    const player = getCurrentPlayer();
+    try {
+      if (!player) return showError('No current player found');
+      if (game.mortgaged?.[prop.name]) return showError('Property is already mortgaged');
+      if (housesCount(prop) > 0) return showError('Cannot mortgage property with houses');
+      if (!prop.mortgageValue) return showError('This property cannot be mortgaged (no mortgage value)');
+      
+      const mortgageAmount = Number(prop.mortgageValue);
+      if (isNaN(mortgageAmount)) return showError('Invalid mortgage value');
+      
+      player.cash = Number(player.cash) + mortgageAmount;
+      game.mortgaged = game.mortgaged || {};
+      game.mortgaged[prop.name] = true;
+      
+      const action = {
+        type: 'mortgage',
+        playerName: player.name,
+        property: prop.name,
+        amount: mortgageAmount,
+        timestamp: new Date().toISOString()
+      };
+      actions.push(action);
+      
+      storage.saveGame(game);
+      storage.setActions(actions);
+      loadAll();
+    } catch (e) {
+      showError(`Mortgage failed: ${e.message}`);
+    }
+  }
+
+  function unmortgage(prop) {
+    const player = getCurrentPlayer();
+    const unmortgageCost = Math.ceil(prop.mortgageValue * 1.1);
+    try {
+      if (!player) return showError('No current player found');
+      if (!game.mortgaged?.[prop.name]) return showError('Property is not mortgaged');
+      if (player.cash < unmortgageCost) return showError(`Insufficient funds: need $${unmortgageCost}, have $${player.cash}`);
+      
+      player.cash = Number(player.cash) - Number(unmortgageCost);
+      delete game.mortgaged[prop.name];
+      
+      const action = {
+        type: 'unmortgage',
+        playerName: player.name,
+        property: prop.name,
+        amount: unmortgageCost,
+        timestamp: new Date().toISOString()
+      };
+      actions.push(action);
+      
+      storage.saveGame(game);
+      storage.setActions(actions);
+      loadAll();
+    } catch (e) {
+      showError(`Unmortgage failed: ${e.message}`);
     }
   }
 
@@ -158,13 +253,14 @@
       storage.saveGame(game);
       storage.setActions(actions);
       loadAll();
-      amount = 0;
-      note = '';
-    }catch(e){ showError(`Transfer failed: ${e.message}`); }
+    } catch (e) {
+      showError(`Transfer failed: ${e.message}`);
+    }
   }
 
   function endTurn(){
     try {
+      game.purchasedThisTurn = null; // Reset purchase limit for next turn
       const currentIdx = game.players.findIndex(p => p.id === game.currentPlayer);
       game.currentPlayer = game.players[(currentIdx + 1) % game.players.length].id;
       storage.saveGame(game);
@@ -178,7 +274,7 @@
   function housesCount(prop) {
     const h = game.houses?.[prop.name];
     if (!h) return 0;
-    return h === 'H' ? 4 : h;
+    return h === 'H' ? 5 : h;
   }
 
   function ownerName(prop) {
@@ -205,7 +301,7 @@
 <h2>Game Management</h2>
 
 {#if game.players.length}
-  <p>Current player: <strong>{getCurrentPlayer()?.name || 'Unknown'}</strong> (${getCurrentPlayer()?.cash || 0})</p>
+  <p>Current player: <strong>{currentPlayerData?.name || 'Unknown'}</strong> (${currentPlayerData?.cash || 0})</p>
 
   <div style="margin: 16px 0; border-bottom: 2px solid #ddd;">
     <button on:click={() => activeTab = 'properties'} style="padding: 8px 16px; border: none; background: {activeTab === 'properties' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'properties' ? 'white' : 'black'}; cursor: pointer;">Properties</button>
@@ -220,15 +316,26 @@
         <div style="width:12px;background:{getColorHex(p.color)};cursor:help;position:relative;border-right:1px solid #999" title={p.color}></div>
         <div style="flex:1;padding:8px">
           <strong>{p.name}</strong> — ${p.value}
-          <div>Owner: {ownerName(p) || '(available)'} {#if housesCount(p)>0} — houses: {housesCount(p)}{/if}</div>
+          <div>Owner: {ownerName(p) || '(available)'} {#if game.mortgaged?.[p.name]} — 🔒 MORTGAGED{/if} {#if housesCount(p)>0} — {housesCount(p) === 5 ? '🏨 Hotel' : '🏠 ' + housesCount(p) + ' house(s)'}{/if}</div>
           <div style="margin-top:8px">
             {#if !ownerName(p)}
               <button on:click={() => buy(p)} style="padding:6px 12px;background:#4caf50;color:white;border:none;cursor:pointer;border-radius:4px;margin-right:6px">Buy</button>
             {/if}
             {#if ownerName(p) === getCurrentPlayer()?.name}
-              <button on:click={() => buyHouse(p)} style="padding:6px 12px;background:#2196f3;color:white;border:none;cursor:pointer;border-radius:4px;margin-right:6px">Buy House</button>
-              {#if housesCount(p) > 0}
-                <button on:click={() => removeHouse(p)} style="padding:6px 12px;background:#ff9800;color:white;border:none;cursor:pointer;border-radius:4px">Sell House</button>
+              {#if !game.mortgaged?.[p.name]}
+                {#if p.canHaveHouses !== false && housesCount(p) < 5}
+                  <button on:click={() => buyHouse(p)} style="padding:6px 12px;background:#2196f3;color:white;border:none;cursor:pointer;border-radius:4px;margin-right:6px">{housesCount(p) === 4 ? 'Buy Hotel' : 'Buy House'}</button>
+                {/if}
+                {#if housesCount(p) > 0}
+                  <button on:click={() => removeHouse(p)} style="padding:6px 12px;background:#ff9800;color:white;border:none;cursor:pointer;border-radius:4px;margin-right:6px">Sell {housesCount(p) === 5 ? 'Hotel' : 'House'}</button>
+                {/if}
+              {/if}
+              {#if housesCount(p) === 0}
+                {#if game.mortgaged?.[p.name]}
+                  <button on:click={() => unmortgage(p)} style="padding:6px 12px;background:#9c27b0;color:white;border:none;cursor:pointer;border-radius:4px;margin-right:6px">Unmortgage (${Math.ceil(p.mortgageValue * 1.1)})</button>
+                {:else}
+                  <button on:click={() => mortgage(p)} style="padding:6px 12px;background:#ff5722;color:white;border:none;cursor:pointer;border-radius:4px">Mortgage (${p.mortgageValue})</button>
+                {/if}
               {/if}
             {/if}
           </div>

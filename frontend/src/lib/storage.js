@@ -78,12 +78,12 @@ export function getDefaultProperties() {
     { name: 'Pennsylvania Avenue', value: 320, color: 'Green', mortgageValue: 160 },
     { name: 'Park Place', value: 350, color: 'Dark Blue', mortgageValue: 175 },
     { name: 'Boardwalk', value: 400, color: 'Dark Blue', mortgageValue: 200 },
-    { name: 'Reading Railroad', value: 200, color: 'Railroad' },
-    { name: 'Pennsylvania Railroad', value: 200, color: 'Railroad' },
-    { name: 'B. & O. Railroad', value: 200, color: 'Railroad' },
-    { name: 'Short Line', value: 200, color: 'Railroad' },
-    { name: 'Electric Company', value: 150, color: 'Utility' },
-    { name: 'Water Works', value: 150, color: 'Utility' }
+    { name: 'Reading Railroad', value: 200, color: 'Railroad', mortgageValue: 100, canHaveHouses: false },
+    { name: 'Pennsylvania Railroad', value: 200, color: 'Railroad', mortgageValue: 100, canHaveHouses: false },
+    { name: 'B. & O. Railroad', value: 200, color: 'Railroad', mortgageValue: 100, canHaveHouses: false },
+    { name: 'Short Line', value: 200, color: 'Railroad', mortgageValue: 100, canHaveHouses: false },
+    { name: 'Electric Company', value: 150, color: 'Utility', mortgageValue: 75, canHaveHouses: false },
+    { name: 'Water Works', value: 150, color: 'Utility', mortgageValue: 75, canHaveHouses: false }
   ];
 }
 

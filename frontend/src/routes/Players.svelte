@@ -19,6 +19,8 @@
   let manualRollValues = {};
   let rolloffCountdown = 0;
   let showRolloffResults = false;
+  let selectedPropertySet = 'classic.json';
+  let selectedCardSet = 'standard.json';
 
   const checkExistingGame = () => {
     try {
@@ -80,7 +82,9 @@
         currentPlayer: 1,
         gameState: 'setup',
         firstPlayerSet: false,
-        history: []
+        history: [],
+        propertySet: selectedPropertySet,
+        cardSet: selectedCardSet
       };
       storage.saveGame(gameData);
       loadGame();
@@ -238,8 +242,7 @@
     <button on:click={() => activeTab = 'number'} style="font-weight: {activeTab === 'number' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'number' ? '#2196f3' : '#eee'}; color: {activeTab === 'number' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">🎲 Number</button>
     <button on:click={() => activeTab = 'players'} style="font-weight: {activeTab === 'players' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'players' ? '#2196f3' : '#eee'}; color: {activeTab === 'players' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">👥 Players</button>
     <button on:click={() => activeTab = 'cash'} style="font-weight: {activeTab === 'cash' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'cash' ? '#2196f3' : '#eee'}; color: {activeTab === 'cash' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">💵 Starting Cash</button>
-    <button on:click={() => activeTab = 'properties'} style="font-weight: {activeTab === 'properties' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'properties' ? '#2196f3' : '#eee'}; color: {activeTab === 'properties' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">🏠 Property Set</button>
-    <button on:click={() => activeTab = 'cardfile'} style="font-weight: {activeTab === 'cardfile' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'cardfile' ? '#2196f3' : '#eee'}; color: {activeTab === 'cardfile' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">🎴 Chance/Chest</button>
+    <button on:click={() => activeTab = 'properties'} style="font-weight: {activeTab === 'properties' ? 'bold' : 'normal'}; margin-right: 12px; padding: 8px; background: {activeTab === 'properties' ? '#2196f3' : '#eee'}; color: {activeTab === 'properties' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">Cards</button>
     <button on:click={() => activeTab = 'create'} style="font-weight: {activeTab === 'create' ? 'bold' : 'normal'}; padding: 8px; background: {activeTab === 'create' ? '#4caf50' : '#eee'}; color: {activeTab === 'create' ? 'white' : 'black'}; border: none; cursor: pointer; border-radius: 4px;">✓ Create Game</button>
   </div>
 
@@ -272,10 +275,21 @@
     </label>
   {:else if activeTab === 'properties'}
     <h3>Property Set</h3>
-    <p><small>Use the Config Editor tab to customize properties and card sets.</small></p>
-  {:else if activeTab === 'cardfile'}
-    <h3>Chance/Community Chest Cards</h3>
-    <p><small>Use the Config Editor tab to customize card sets.</small></p>
+    <div style="margin: 16px 0;">
+      <label style="display: block; margin-bottom: 12px;">
+        <strong>Property Set:</strong><br>
+        <select bind:value={selectedPropertySet} style="margin-top: 8px; padding: 8px; width: 100%; max-width: 400px;">
+          <option value="classic.json">Classic Monopoly Properties (English)</option>
+        </select>
+      </label>
+      <label style="display: block; margin-bottom: 12px;">
+        <strong>Card Set:</strong><br>
+        <select bind:value={selectedCardSet} style="margin-top: 8px; padding: 8px; width: 100%; max-width: 400px;">
+          <option value="standard.json">Special Cards (English)</option>
+        </select>
+      </label>
+      <p><small>Use the Config Editor tab to create and customize different property and card sets.</small></p>
+    </div>
   {:else if activeTab === 'create'}
     <h3>Create Game</h3>
     <p>Review your settings:</p>

@@ -5,6 +5,7 @@ import path from 'path';
 export default defineConfig({
   plugins: [svelte()],
   root: '.',
+  base: '/web-monopoly-companion/',
   server: {
     port: 5173,
     fs: {
@@ -39,8 +40,8 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: path.resolve(__dirname, '../public'),
-    emptyOutDir: false,
+    outDir: path.resolve(__dirname, '../dist'),
+    emptyOutDir: true,
     sourcemap: false
   }
 });
