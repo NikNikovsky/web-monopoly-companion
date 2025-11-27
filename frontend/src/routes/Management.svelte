@@ -28,14 +28,14 @@
     return colorMap[colorName] || '#999';
   }
 
-  function loadAll(){
+  async function loadAll(){
     try {
       const freshGame = storage.getGame();
       game = { ...freshGame }; // Create new object reference for reactivity
       
       // Load properties from the config file specified in the game
       const propertyFile = game.propertySet || 'classic-en.json';
-      loadPropertiesFromFile(propertyFile);
+      await loadPropertiesFromFile(propertyFile);
       
       actions = storage.getActions() || [];
       
