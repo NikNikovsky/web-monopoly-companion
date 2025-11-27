@@ -3,35 +3,147 @@
   "cards": [
     {
       "id": "collect-10-from-all",
-      "name": "Collect $10 from Every Player",
-      "description": "You collect $10 from each other player",
+      "name": "Dziś są twoje urodziny!",
+      "description": "Pobierz 10M od każdego z graczy.",
       "type": "collect",
       "amount": 10,
-      "category": "Chance"
+      "category": "Community Chest"
     },
     {
       "id": "pay-50-each",
-      "name": "Pay $50 to Each Player",
-      "description": "You pay $50 to each other player",
+      "name": "Wybrano cię prezesem zarządu.",
+      "description": "Zapłać każdemu graczowi 50M.",
       "type": "pay",
+      "amount": 50,
+      "category": "Chance"
+    },
+    {
+      "id": "pay-100-bank-hospital",
+      "name": "Opłata za pobyt w szpitalu",
+      "description": "100M",
+      "type": "pay-bank",
+      "amount": 100,
+      "category": "Community Chest"
+    },
+    {
+      "id": "pass-go-c",
+      "name": "Idż na pole start",
+      "description": "Pobierz 200M",
+      "type": "collect-bank",
+      "amount": 200,
+      "category": "Chance"
+    },
+    {
+      "id": "pass-go-cc",
+      "name": "Idż na pole start",
+      "description": "Pobierz 200M",
+      "type": "collect-bank",
+      "amount": 200,
+      "category": "Community Chest"
+    },
+   {
+      "id": "collect-bank-tax",
+      "name": "Zwrot podatku dochodowego.",
+      "description": "Pobierz 20M",
+      "type": "collect-bank",
+      "amount": 20,
+      "category": "Community Chest"
+    },
+   {
+      "id": "collect-bank-deed",
+      "name": "Dziedziczysz spadek",
+      "description": "100M",
+      "type": "collect-bank",
+      "amount": 100,
+      "category": "Community Chest"
+    },
+    {
+      "id": "collect-bank-dividend",
+      "name": "Bank wypłaca dywidendę",
+      "description": "50M",
+      "type": "collect-bank",
+      "amount": 50,
+      "category": "Chance"
+    },
+      {
+      "id": "bank-ticket",
+      "name": "Mandat za przekroczenie prędkości",
+      "description": "15M",
+      "type": "pay-bank",
+      "amount": 15,
+      "category": "Chance"
+    },
+    {
+      "id": "pay-bank-school",
+      "name": "Opłata za czesne.",
+      "description": "50M",
+      "type": "pay-bank",
       "amount": 50,
       "category": "Community Chest"
     },
     {
-      "id": "pay-150-bank",
-      "name": "Pay $150 to Bank",
-      "description": "Pay $150 to the bank",
-      "type": "pay-bank",
+      "id": "bank-collect-credit",
+      "name": "Otrzymujesz spłatę kredytu budowlanego.",
+      "description": "150M",
+      "type": "collect-bank",
       "amount": 150,
+      "category": "Chance"
+    },
+    {
+      "id": "pay-50-bank-doctor",
+      "name": "Opłata za konsultację lekarską",
+      "description": "50M",
+      "type": "pay-bank",
+      "amount": 50,
+      "category": "Community Chest"
+    }, 
+    {
+      "id": "collect-10-bank-contest",
+      "name": "Zajmujesz drugie miejsce w konkursie piękności",
+      "description": "10M",
+      "type": "collect-bank",
+      "amount": 10,
       "category": "Community Chest"
     },
     {
-      "id": "collect-200-bank",
-      "name": "Collect $200 from Bank",
-      "description": "Collect $200 from the bank (go/pass go)",
+      "id": "collect-200-bank-mistake",
+      "name": "Pomyłka banku na twoją korzyść",
+      "description": "200M",
       "type": "collect-bank",
       "amount": 200,
-      "category": "Chance"
+      "category": "Community Chest"
+    },
+    {
+      "id": "collect-25-bank-consult",
+      "name": "Pobierz opłatę za usługę konsultingową",
+      "description": "25M",
+      "type": "collect-bank",
+      "amount": 25,
+      "category": "Community Chest"
+    },
+    {
+      "id": "collect-100-bank-life-insurance",
+      "name": "Otrzymujesz wypłatę z ubezpiecznia na życie",
+      "description": "100M",
+      "type": "collect-bank",
+      "amount": 100,
+      "category": "Community Chest"
+    },
+    {
+      "id": "collect-100-bank-vacation-fund",
+      "name": "Otrzymujesz wypłatę z funduszu wakacyjnego",
+      "description": "100M",
+      "type": "collect-bank",
+      "amount": 100,
+      "category": "Community Chest"
+    },
+    {
+      "id": "collect-50-bank-stonks",
+      "name": "Sprzedajesz akcje z zyskiem",
+      "description": "50M",
+      "type": "collect-bank",
+      "amount": 50,
+      "category": "Community Chest"
     }
   ]
 }

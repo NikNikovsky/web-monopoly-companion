@@ -95,12 +95,40 @@ export function getDefaultCards() {
   const data = localStorage.getItem(STORAGE_KEYS.CARDS);
   if (data) return JSON.parse(data);
   
-  // Default cards if none loaded
+  // Default cards if none loaded - matches standard.json format
   return [
-    { id: 1, name: 'Go to Jail', description: 'Go directly to jail', type: 'Chance', category: 'Chance', amount: 0 },
-    { id: 2, name: 'Advance to Go', description: 'Advance to Go', type: 'Chance', category: 'Chance', amount: 200 },
-    { id: 3, name: 'Pay Poor Tax', description: 'Pay Poor Tax of $50', type: 'Community Chest', category: 'Community Chest', amount: -50 },
-    { id: 4, name: 'Income Tax Refund', description: 'Income Tax Refund $20', type: 'Community Chest', category: 'Community Chest', amount: 20 }
+    {
+      "id": "collect-10-from-all",
+      "name": "Collect $10 from Every Player",
+      "description": "You collect $10 from each other player",
+      "type": "collect",
+      "amount": 10,
+      "category": "Chance"
+    },
+    {
+      "id": "pay-50-each",
+      "name": "Pay $50 to Each Player",
+      "description": "You pay $50 to each other player",
+      "type": "pay",
+      "amount": 50,
+      "category": "Community Chest"
+    },
+    {
+      "id": "pay-150-bank",
+      "name": "Pay $150 to Bank",
+      "description": "Pay $150 to the bank",
+      "type": "pay-bank",
+      "amount": 150,
+      "category": "Community Chest"
+    },
+    {
+      "id": "collect-200-bank",
+      "name": "Collect $200 from Bank",
+      "description": "Collect $200 from the bank (go/pass go)",
+      "type": "collect-bank",
+      "amount": 200,
+      "category": "Chance"
+    }
   ];
 }
 
