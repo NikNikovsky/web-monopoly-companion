@@ -7,9 +7,7 @@
       "color": "Brown",
       "mortgageValue": 30,
       "unmortgageValue": 33,
-      "houseCost": 50,
-      "houseRent": [2, 6, 18, 30, 90],
-      "hotelRent": 90
+      "houseCost": 50
     },
     {
       "name": "Ulica Stalowa",
@@ -17,9 +15,7 @@
       "color": "Brown",
       "mortgageValue": 30,
       "unmortgageValue": 33,
-      "houseCost": 50,
-      "houseRent": [4, 12, 36, 60, 180],
-      "hotelRent": 180
+      "houseCost": 50
     },
     {
       "name": "Radzymińska",
@@ -27,9 +23,7 @@
       "color": "Light Blue",
       "mortgageValue": 50,
       "unmortgageValue": 55,
-      "houseCost": 50,
-      "houseRent": [6, 18, 54, 90, 270],
-      "hotelRent": 270
+      "houseCost": 50
     },
     {
       "name": "Ulica Jagiellońska",
@@ -37,9 +31,7 @@
       "color": "Light Blue",
       "mortgageValue": 50,
       "unmortgageValue": 55,
-      "houseCost": 50,
-      "houseRent": [6, 18, 54, 90, 270],
-      "hotelRent": 270
+      "houseCost": 50
     },
     {
       "name": "Ulica Targowa",
@@ -47,9 +39,7 @@
       "color": "Light Blue",
       "mortgageValue": 60,
       "unmortgageValue": 66,
-      "houseCost": 50,
-      "houseRent": [8, 24, 72, 120, 360],
-      "hotelRent": 360
+      "houseCost": 50
     },
     {
       "name": "St. Charles Place",
@@ -57,9 +47,7 @@
       "color": "Pink",
       "mortgageValue": 70,
       "unmortgageValue": 77,
-      "houseCost": 100,
-      "houseRent": [10, 30, 90, 160, 480],
-      "hotelRent": 480
+      "houseCost": 100
     },
     {
       "name": "States Avenue",
@@ -67,9 +55,7 @@
       "color": "Pink",
       "mortgageValue": 70,
       "unmortgageValue": 77,
-      "houseCost": 100,
-      "houseRent": [10, 30, 90, 160, 480],
-      "hotelRent": 480
+      "houseCost": 100
     },
     {
       "name": "Virginia Avenue",
@@ -77,9 +63,7 @@
       "color": "Pink",
       "mortgageValue": 80,
       "unmortgageValue": 88,
-      "houseCost": 100,
-      "houseRent": [12, 36, 108, 180, 540],
-      "hotelRent": 540
+      "houseCost": 100
     },
     {
       "name": "St. James Place",
@@ -87,9 +71,7 @@
       "color": "Orange",
       "mortgageValue": 90,
       "unmortgageValue": 99,
-      "houseCost": 100,
-      "houseRent": [14, 42, 126, 210, 630],
-      "hotelRent": 630
+      "houseCost": 100
     },
     {
       "name": "Tennessee Avenue",
@@ -97,9 +79,7 @@
       "color": "Orange",
       "mortgageValue": 90,
       "unmortgageValue": 99,
-      "houseCost": 100,
-      "houseRent": [14, 42, 126, 210, 630],
-      "hotelRent": 630
+      "houseCost": 100
     },
     {
       "name": "New York Avenue",
@@ -107,9 +87,7 @@
       "color": "Orange",
       "mortgageValue": 100,
       "unmortgageValue": 110,
-      "houseCost": 100,
-      "houseRent": [16, 48, 144, 240, 720],
-      "hotelRent": 720
+      "houseCost": 100
     },
     {
       "name": "Kentucky Avenue",
@@ -117,9 +95,7 @@
       "color": "Red",
       "mortgageValue": 110,
       "unmortgageValue": 121,
-      "houseCost": 150,
-      "houseRent": [18, 54, 162, 270, 810],
-      "hotelRent": 810
+      "houseCost": 150
     },
     {
       "name": "Indiana Avenue",
@@ -127,9 +103,7 @@
       "color": "Red",
       "mortgageValue": 110,
       "unmortgageValue": 121,
-      "houseCost": 150,
-      "houseRent": [18, 54, 162, 270, 810],
-      "hotelRent": 810
+      "houseCost": 150
     },
     {
       "name": "Illinois Avenue",
@@ -137,9 +111,7 @@
       "color": "Red",
       "mortgageValue": 120,
       "unmortgageValue": 132,
-      "houseCost": 150,
-      "houseRent": [20, 60, 180, 300, 900],
-      "hotelRent": 900
+      "houseCost": 150
     },
     {
       "name": "Atlantic Avenue",
@@ -147,9 +119,7 @@
       "color": "Yellow",
       "mortgageValue": 130,
       "unmortgageValue": 143,
-      "houseCost": 150,
-      "houseRent": [22, 66, 198, 330, 990],
-      "hotelRent": 990
+      "houseCost": 150
     },
     {
       "name": "Ventnor Avenue",
@@ -157,9 +127,7 @@
       "color": "Yellow",
       "mortgageValue": 130,
       "unmortgageValue": 143,
-      "houseCost": 150,
-      "houseRent": [22, 66, 198, 330, 990],
-      "hotelRent": 990
+      "houseCost": 150
     },
     {
       "name": "Marvin Gardens",
@@ -167,9 +135,7 @@
       "color": "Yellow",
       "mortgageValue": 140,
       "unmortgageValue": 154,
-      "houseCost": 150,
-      "houseRent": [24, 72, 216, 360, 1080],
-      "hotelRent": 1080
+      "houseCost": 150
     },
     {
       "name": "Pacific Avenue",
@@ -177,9 +143,7 @@
       "color": "Green",
       "mortgageValue": 150,
       "unmortgageValue": 165,
-      "houseCost": 200,
-      "houseRent": [26, 78, 234, 390, 1170],
-      "hotelRent": 1170
+      "houseCost": 200
     },
     {
       "name": "North Carolina Avenue",
@@ -187,9 +151,7 @@
       "color": "Green",
       "mortgageValue": 150,
       "unmortgageValue": 165,
-      "houseCost": 200,
-      "houseRent": [26, 78, 234, 390, 1170],
-      "hotelRent": 1170
+      "houseCost": 200
     },
     {
       "name": "Pennsylvania Avenue",
@@ -197,9 +159,7 @@
       "color": "Green",
       "mortgageValue": 160,
       "unmortgageValue": 176,
-      "houseCost": 200,
-      "houseRent": [28, 84, 252, 420, 1260],
-      "hotelRent": 1260
+      "houseCost": 200
     },
     {
       "name": "Park Place",
@@ -207,9 +167,7 @@
       "color": "Dark Blue",
       "mortgageValue": 175,
       "unmortgageValue": 192,
-      "houseCost": 200,
-      "houseRent": [35, 105, 315, 525, 1575],
-      "hotelRent": 1575
+      "houseCost": 200
     },
     {
       "name": "Boardwalk",
@@ -217,9 +175,7 @@
       "color": "Dark Blue",
       "mortgageValue": 200,
       "unmortgageValue": 220,
-      "houseCost": 200,
-      "houseRent": [50, 150, 450, 625, 1875],
-      "hotelRent": 1875
+      "houseCost": 200
     },
     {
       "name": "Reading Railroad",
