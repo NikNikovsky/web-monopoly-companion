@@ -32,7 +32,11 @@
     try {
       const freshGame = storage.getGame();
       game = { ...freshGame }; // Create new object reference for reactivity
-      properties = storage.getDefaultProperties();
+      
+      // Load properties from the config file specified in the game
+      const propertyFile = game.propertySet || 'classic-en.json';
+      loadPropertiesFromFile(propertyFile);
+      
       actions = storage.getActions() || [];
       
       // Update current player display data
@@ -44,6 +48,22 @@
       }
     } catch (e) {
       showError(e.message || 'Failed to load data');
+    }
+  }
+
+  async function loadPropertiesFromFile(filename) {
+    try {
+      const response = await fetch(`/config/properties/${filename}`);
+      if (!response.ok) {
+        // Fallback to default if file not found
+        properties = storage.getDefaultProperties();
+        return;
+      }
+      const data = await response.json();
+      properties = data.properties || [];
+    } catch (e) {
+      // Fallback to default on error
+      properties = storage.getDefaultProperties();
     }
   }
 

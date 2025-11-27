@@ -19,7 +19,7 @@
   let manualRollValues = {};
   let rolloffCountdown = 0;
   let showRolloffResults = false;
-  let selectedPropertySet = 'classic.json';
+  let selectedPropertySet = 'classic-en.json';
   let selectedCardSet = 'standard.json';
 
   const checkExistingGame = () => {
@@ -279,7 +279,8 @@
       <label style="display: block; margin-bottom: 12px;">
         <strong>Property Set:</strong><br>
         <select bind:value={selectedPropertySet} style="margin-top: 8px; padding: 8px; width: 100%; max-width: 400px;">
-          <option value="classic.json">Classic Monopoly Properties (English)</option>
+          <option value="classic-en.json">Classic Monopoly Properties (English)</option>
+          <option value="classic-pl.json">Classic Monopoly Properties (Polish)</option>
         </select>
       </label>
       <label style="display: block; margin-bottom: 12px;">
