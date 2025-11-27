@@ -38,7 +38,7 @@
       "name": "You must pay for repairs",
       "description": "Pay $25 per house, $100 per hotel",
       "type": "renovation",
-      "category": "Community Chest",
+      "category": "Chance",
       "houseCost": 25,
       "hotelCost": 100
     },
