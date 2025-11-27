@@ -14,6 +14,7 @@
   let activeTab = 'properties';
   let drawnCard = null;
   let cardDeck = [];
+  let visibleDeck = null; // 'Chance' or 'Community Chest' to show list
 
   const colorMap = {
     'Brown': '#8B4513',
@@ -294,16 +295,10 @@
     }
   }
 
-  async function drawCard(deckType) {
+  async function showCardList(deckType) {
     try {
       if (drawnCard) {
         showError('A card is already drawn. Resolve or undo it first.');
-        return;
-      }
-
-      const currentPlayer = game.players.find(p => p.id === game.currentPlayer);
-      if (!currentPlayer) {
-        showError('No current player found');
         return;
       }
 
@@ -319,15 +314,20 @@
         return;
       }
 
-      const selectedCard = deckCards[Math.floor(Math.random() * deckCards.length)];
-      drawnCard = selectedCard;
+      visibleDeck = deckType;
     } catch (e) {
-      showError('Failed to draw card: ' + e.message);
+      showError('Failed to load cards: ' + e.message);
     }
+  }
+
+  function selectCard(card) {
+    drawnCard = card;
+    visibleDeck = null;
   }
 
   function undoCard() {
     drawnCard = null;
+    visibleDeck = null;
   }
 
   async function resolveCard() {
@@ -373,7 +373,41 @@
         }
         handled = true;
       } else if (drawnCard.type === 'renovation') {
-        return showError(`Card "${drawnCard.name}" requires manual handling. Please calculate the amount and use the transfer tool.`);
+        // Calculate renovation costs for all players and apply to current player
+        let totalCost = 0;
+        
+        // Get all player properties
+        for (const p of game.players) {
+          if (p.id !== currentPlayer.id) {
+            // Count houses and hotels for this player
+            let playerHouses = 0;
+            let playerHotels = 0;
+            
+            for (const propName in game.ownership) {
+              if (game.ownership[propName] === p.id) {
+                const houseCount = game.houses?.[propName];
+                if (houseCount === 'H') {
+                  playerHotels++;
+                } else if (houseCount > 0) {
+                  playerHouses += houseCount;
+                }
+              }
+            }
+            
+            // Calculate cost: 25 per house, 100 per hotel (or 40/115 based on card type)
+            const houseCost = drawnCard.houseCost || 25;
+            const hotelCost = drawnCard.hotelCost || 100;
+            const playerAmount = (playerHouses * houseCost) + (playerHotels * hotelCost);
+            
+            if (playerAmount > 0) {
+              p.cash = (p.cash || 0) - playerAmount;
+              totalCost += playerAmount;
+            }
+          }
+        }
+        
+        currentPlayer.cash = (currentPlayer.cash || 0) + totalCost;
+        handled = true;
       } else {
         return showError(`Card type "${drawnCard.type}" not yet implemented`);
       }
@@ -487,16 +521,29 @@
     </div>
 
   {:else if activeTab === 'cards'}
-    <h3>Draw a Card</h3>
-    {#if !drawnCard}
+    <h3>Select a Card</h3>
+    {#if !drawnCard && !visibleDeck}
       <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-        <button on:click={() => drawCard('Chance')} style="flex: 1; padding: 12px 16px; font-size: 1em; border: none; border-radius: 4px; background: #ff9800; color: white; cursor: pointer; font-weight: bold;">🎲 Draw Chance Card</button>
-        <button on:click={() => drawCard('Community Chest')} style="flex: 1; padding: 12px 16px; font-size: 1em; border: none; border-radius: 4px; background: #2196f3; color: white; cursor: pointer; font-weight: bold;">📦 Draw Community Chest</button>
+        <button on:click={() => showCardList('Chance')} style="flex: 1; padding: 12px 16px; font-size: 1em; border: none; border-radius: 4px; background: #ff9800; color: white; cursor: pointer; font-weight: bold;">🎲 Chance Cards</button>
+        <button on:click={() => showCardList('Community Chest')} style="flex: 1; padding: 12px 16px; font-size: 1em; border: none; border-radius: 4px; background: #2196f3; color: white; cursor: pointer; font-weight: bold;">📦 Community Chest</button>
       </div>
       <div style="text-align: center; color: #999; padding: 40px 20px;">
-        <p>Select a card deck to begin</p>
+        <p>Select a deck to view available cards</p>
       </div>
-    {:else}
+    {:else if visibleDeck}
+      <div style="margin-bottom: 16px;">
+        <button on:click={() => visibleDeck = null} style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">← Back</button>
+        <h4 style="margin-top: 12px;">{visibleDeck} Cards</h4>
+      </div>
+      <div style="display: grid; gap: 10px;">
+        {#each cardDeck.filter(c => c.category === visibleDeck) as card}
+          <div role="button" tabindex="0" style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; cursor: pointer; background: #f9f9f9; transition: all 0.2s;" on:click={() => selectCard(card)} on:keydown={(e) => e.key === 'Enter' && selectCard(card)}>
+            <div style="font-weight: bold; margin-bottom: 4px;">{card.name}</div>
+            <div style="font-size: 0.9em; color: #666;">{card.description}</div>
+          </div>
+        {/each}
+      </div>
+    {:else if drawnCard}
       <div style="background: #f5f5f5; border: 3px solid #333; border-radius: 8px; padding: 24px; margin-bottom: 20px; min-height: 200px; display: flex; flex-direction: column; justify-content: space-between;" class:chance={drawnCard.category === 'Chance'} class:chest={drawnCard.category === 'Community Chest'}>
         <div>
           <div style="font-size: 0.9em; font-weight: bold; color: #666; text-transform: uppercase; letter-spacing: 1px;">{drawnCard.category}</div>
