@@ -12,7 +12,8 @@ export default defineConfig({
       strict: true,
       allow: [
         path.resolve(__dirname, '.'),
-        path.resolve(__dirname, '../public')
+        path.resolve(__dirname, '../public'),
+        path.resolve(__dirname, '../config')
       ],
       deny: [
         path.resolve(__dirname, '../.env'),

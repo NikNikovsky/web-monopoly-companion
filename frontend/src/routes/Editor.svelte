@@ -34,22 +34,16 @@
       let data;
       
       if (category === 'properties') {
-        const props = storage.getDefaultProperties();
-        // Load from the actual config file title
-        const fileData = {
-          title: 'Classic Monopoly Properties (English)',
-          properties: props
-        };
-        data = fileData;
+        // Load from config file
+        const response = await fetch(`/config/properties/${filename}`);
+        if (!response.ok) throw new Error('Failed to load config file');
+        data = await response.json();
         items = data.properties || [];
       } else if (category === 'cards') {
-        const cards = storage.getDefaultCards() || [];
-        // Load from the actual config file title
-        const fileData = {
-          title: 'Special Cards (English)',
-          cards: cards
-        };
-        data = fileData;
+        // Load from config file
+        const response = await fetch(`/config/cards/${filename}`);
+        if (!response.ok) throw new Error('Failed to load config file');
+        data = await response.json();
         items = data.cards || [];
       }
       

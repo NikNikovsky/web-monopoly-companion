@@ -1,0 +1,229 @@
+{
+  "title": "Classic Monopoly Properties (Polish)",
+  "properties": [
+    {
+      "name": "Ulica Konopacka",
+      "value": 60,
+      "color": "Brown",
+      "mortgageValue": 30,
+      "unmortgageValue": 33,
+      "houseCost": 50
+    },
+    {
+      "name": "Ulica Stalowa",
+      "value": 60,
+      "color": "Brown",
+      "mortgageValue": 30,
+      "unmortgageValue": 33,
+      "houseCost": 50
+    },
+    {
+      "name": "Ulica Radzymińska",
+      "value": 100,
+      "color": "Light Blue",
+      "mortgageValue": 50,
+      "unmortgageValue": 55,
+      "houseCost": 50
+    },
+    {
+      "name": "Ulica Jagiellońska",
+      "value": 100,
+      "color": "Light Blue",
+      "mortgageValue": 50,
+      "unmortgageValue": 55,
+      "houseCost": 50
+    },
+    {
+      "name": "Ulica Targowa",
+      "value": 120,
+      "color": "Light Blue",
+      "mortgageValue": 60,
+      "unmortgageValue": 66,
+      "houseCost": 50
+    },
+    {
+      "name": "Ulica Płowiecka",
+      "value": 140,
+      "color": "Pink",
+      "mortgageValue": 70,
+      "unmortgageValue": 77,
+      "houseCost": 100
+    },
+    {
+      "name": "Ulica Marsa",
+      "value": 140,
+      "color": "Pink",
+      "mortgageValue": 70,
+      "unmortgageValue": 77,
+      "houseCost": 100
+    },
+    {
+      "name": "Ulica Grochowska",
+      "value": 160,
+      "color": "Pink",
+      "mortgageValue": 80,
+      "unmortgageValue": 88,
+      "houseCost": 100
+    },
+    {
+      "name": "Ulica Obozowa",
+      "value": 180,
+      "color": "Orange",
+      "mortgageValue": 90,
+      "unmortgageValue": 99,
+      "houseCost": 100
+    },
+    {
+      "name": "Ulica Górczewska",
+      "value": 180,
+      "color": "Orange",
+      "mortgageValue": 90,
+      "unmortgageValue": 99,
+      "houseCost": 100
+    },
+    {
+      "name": "Ulica Wolska",
+      "value": 200,
+      "color": "Orange",
+      "mortgageValue": 100,
+      "unmortgageValue": 110,
+      "houseCost": 100
+    },
+    {
+      "name": "Ulica Mickiewicza",
+      "value": 220,
+      "color": "Red",
+      "mortgageValue": 110,
+      "unmortgageValue": 121,
+      "houseCost": 150
+    },
+    {
+      "name": "Ulica Słowackiego",
+      "value": 220,
+      "color": "Red",
+      "mortgageValue": 110,
+      "unmortgageValue": 121,
+      "houseCost": 150
+    },
+    {
+      "name": "Plac Wilsona",
+      "value": 240,
+      "color": "Red",
+      "mortgageValue": 120,
+      "unmortgageValue": 132,
+      "houseCost": 150
+    },
+    {
+      "name": "Ulica Świętokrzyska",
+      "value": 260,
+      "color": "Yellow",
+      "mortgageValue": 130,
+      "unmortgageValue": 143,
+      "houseCost": 150
+    },
+    {
+      "name": "Krakowskie Przedmieście",
+      "value": 260,
+      "color": "Yellow",
+      "mortgageValue": 130,
+      "unmortgageValue": 143,
+      "houseCost": 150
+    },
+    {
+      "name": "Nowy Świat",
+      "value": 280,
+      "color": "Yellow",
+      "mortgageValue": 140,
+      "unmortgageValue": 154,
+      "houseCost": 150
+    },
+    {
+      "name": "Plac Trzech Krzyży",
+      "value": 300,
+      "color": "Green",
+      "mortgageValue": 150,
+      "unmortgageValue": 165,
+      "houseCost": 200
+    },
+    {
+      "name": "Ulica Marszałkowska",
+      "value": 300,
+      "color": "Green",
+      "mortgageValue": 150,
+      "unmortgageValue": 165,
+      "houseCost": 200
+    },
+    {
+      "name": "Aleje Jerozolimskie",
+      "value": 320,
+      "color": "Green",
+      "mortgageValue": 160,
+      "unmortgageValue": 176,
+      "houseCost": 200
+    },
+    {
+      "name": "Ulica Belwederska",
+      "value": 350,
+      "color": "Dark Blue",
+      "mortgageValue": 175,
+      "unmortgageValue": 193,
+      "houseCost": 200
+    },
+    {
+      "name": "Aleje Ujazdowskie",
+      "value": 400,
+      "color": "Dark Blue",
+      "mortgageValue": 200,
+      "unmortgageValue": 220,
+      "houseCost": 200
+    },
+    {
+      "name": "Dworzec Zachodni",
+      "value": 200,
+      "color": "Railroad",
+      "mortgageValue": 100,
+      "unmortgageValue": 110,
+      "canHaveHouses": false
+    },
+    {
+      "name": "Dworzec Centralny",
+      "value": 200,
+      "color": "Railroad",
+      "mortgageValue": 100,
+      "unmortgageValue": 110,
+      "canHaveHouses": false
+    },
+    {
+      "name": "Dworzec Wschodni",
+      "value": 200,
+      "color": "Railroad",
+      "mortgageValue": 100,
+      "unmortgageValue": 110,
+      "canHaveHouses": false
+    },
+    {
+      "name": "Dworzec Gdański",
+      "value": 200,
+      "color": "Railroad",
+      "mortgageValue": 100,
+      "unmortgageValue": 110,
+      "canHaveHouses": false
+    },
+    {
+      "name": "Elektrownia",
+      "value": 150,
+      "color": "Utility",
+      "mortgageValue": 75,
+      "unmortgageValue": 83,
+      "canHaveHouses": false
+    },
+    {
+      "name": "Wodociągi",
+      "value": 150,
+      "color": "Utility",
+      "mortgageValue": 75,
+      "unmortgageValue": 83,
+      "canHaveHouses": false
+    }
+  ]
+}

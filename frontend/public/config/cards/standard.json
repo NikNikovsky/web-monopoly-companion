@@ -1,0 +1,37 @@
+{
+  "title": "Special Cards (English)",
+  "cards": [
+    {
+      "id": "collect-10-from-all",
+      "name": "Collect $10 from Every Player",
+      "description": "You collect $10 from each other player",
+      "type": "collect",
+      "amount": 10,
+      "category": "Chance"
+    },
+    {
+      "id": "pay-50-each",
+      "name": "Pay $50 to Each Player",
+      "description": "You pay $50 to each other player",
+      "type": "pay",
+      "amount": 50,
+      "category": "Community Chest"
+    },
+    {
+      "id": "pay-150-bank",
+      "name": "Pay $150 to Bank",
+      "description": "Pay $150 to the bank",
+      "type": "pay-bank",
+      "amount": 150,
+      "category": "Community Chest"
+    },
+    {
+      "id": "collect-200-bank",
+      "name": "Collect $200 from Bank",
+      "description": "Collect $200 from the bank (go/pass go)",
+      "type": "collect-bank",
+      "amount": 200,
+      "category": "Chance"
+    }
+  ]
+}
