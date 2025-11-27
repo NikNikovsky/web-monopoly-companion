@@ -12,28 +12,6 @@ npm run dev
 # Frontend: http://localhost:5173
 # Backend: http://localhost:3000
 ```
-
-### Build for Production
-```bash
-npm run build-frontend    # Build frontend once
-npm start                 # Start backend only
-```
-## Stopping the Servers
-
-### Stop All Servers
-```bash
-pkill -f "node\|vite"
-```
-
-### Stop Only Frontend Dev Server
-```bash
-pkill -f vite
-```
-
-### Stop Only Backend
-```bash
-pkill -f "node server"
-```
 ## Features
 
 ### Game Management
@@ -160,33 +138,6 @@ Reopen browser → Previous game still there!
   ↓
 Or: Load the JSON file to continue
 ```
-
-## 🌐 Deployment Options
-
-### Option 1: GitHub Pages (Free & Easy)
-```bash
-cd frontend
-npm run build
-
-# Copy contents of frontend/dist/ to gh-pages branch
-# See GitHub Pages docs for detailed steps
-```
-
-### Option 2: Netlify
-Drag and drop `frontend/dist/` folder to Netlify.com
-
-### Option 3: Vercel
-```bash
-npm install -g vercel
-vercel --prod
-# Choose frontend/ as root directory
-```
-
-### Option 4: Any Static Host
-- AWS S3 + CloudFront
-- Azure Static Web Apps
-- Google Cloud Storage + Cloud CDN
-- Any web server (nginx, Apache) serving static files
 
 ## 📝 Notes
 
