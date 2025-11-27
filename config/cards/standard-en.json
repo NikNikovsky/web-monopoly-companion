@@ -32,6 +32,24 @@
       "type": "collect-bank",
       "amount": 200,
       "category": "Chance"
+    },
+    {
+      "id": "renovation-1",
+      "name": "You must pay for repairs",
+      "description": "Pay $25 per house, $100 per hotel",
+      "type": "renovation",
+      "category": "Community Chest",
+      "houseCost": 25,
+      "hotelCost": 100
+    },
+    {
+      "id": "renovation-2",
+      "name": "You must pay for street repairs",
+      "description": "Pay $40 per house, $115 per hotel",
+      "type": "renovation",
+      "category": "Community Chest",
+      "houseCost": 40,
+      "hotelCost": 115
     }
   ]
 }

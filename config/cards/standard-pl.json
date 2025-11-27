@@ -144,6 +144,24 @@
       "type": "collect-bank",
       "amount": 50,
       "category": "Community Chest"
+    },
+    {
+      "id": "renovation-1",
+      "name": "Musisz zapłacić za remonty",
+      "description": "25M za dom, 100M za hotel",
+      "type": "renovation",
+      "category": "Community Chest",
+      "houseCost": 25,
+      "hotelCost": 100
+    },
+    {
+      "id": "renovation-2",
+      "name": "Musisz zapłacić za naprawy ulic",
+      "description": "40M za dom, 115M za hotel",
+      "type": "renovation",
+      "category": "Community Chest",
+      "houseCost": 40,
+      "hotelCost": 115
     }
   ]
 }
