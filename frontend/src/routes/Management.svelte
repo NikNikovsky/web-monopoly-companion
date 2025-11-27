@@ -12,6 +12,8 @@
   
   let fromId = null, toId = null, amount = 0, note = '';
   let activeTab = 'properties';
+  let drawnCard = null;
+  let cardDeck = [];
 
   const colorMap = {
     'Brown': '#8B4513',
@@ -292,6 +294,111 @@
     }
   }
 
+  async function drawCard(deckType) {
+    try {
+      if (drawnCard) {
+        showError('A card is already drawn. Resolve or undo it first.');
+        return;
+      }
+
+      const currentPlayer = game.players.find(p => p.id === game.currentPlayer);
+      if (!currentPlayer) {
+        showError('No current player found');
+        return;
+      }
+
+      // Load cards if not already loaded
+      if (cardDeck.length === 0) {
+        const cardSetFile = game.cardSet || 'standard-en.json';
+        cardDeck = await storage.loadCardsFromFile(cardSetFile);
+      }
+
+      const deckCards = cardDeck.filter(c => c.category === deckType);
+      if (deckCards.length === 0) {
+        showError(`No ${deckType} cards available`);
+        return;
+      }
+
+      const selectedCard = deckCards[Math.floor(Math.random() * deckCards.length)];
+      drawnCard = selectedCard;
+    } catch (e) {
+      showError('Failed to draw card: ' + e.message);
+    }
+  }
+
+  function undoCard() {
+    drawnCard = null;
+  }
+
+  async function resolveCard() {
+    try {
+      if (!drawnCard) return showError('No card drawn');
+
+      const currentPlayer = game.players.find(p => p.id === game.currentPlayer);
+      if (!currentPlayer) return showError('No current player found');
+
+      let handled = false;
+
+      if (drawnCard.type === 'collect-bank') {
+        currentPlayer.cash = (currentPlayer.cash || 0) + drawnCard.amount;
+        handled = true;
+      } else if (drawnCard.type === 'pay-bank') {
+        if (currentPlayer.cash < drawnCard.amount) {
+          return showError(`Insufficient funds: need $${drawnCard.amount}, have $${currentPlayer.cash}`);
+        }
+        currentPlayer.cash = (currentPlayer.cash || 0) - drawnCard.amount;
+        handled = true;
+      } else if (drawnCard.type === 'collect') {
+        let totalCollected = 0;
+        for (const p of game.players) {
+          if (p.id !== currentPlayer.id) {
+            const amount = Math.min(drawnCard.amount, p.cash || 0);
+            p.cash = (p.cash || 0) - amount;
+            totalCollected += amount;
+          }
+        }
+        currentPlayer.cash = (currentPlayer.cash || 0) + totalCollected;
+        handled = true;
+      } else if (drawnCard.type === 'pay') {
+        let totalPaid = 0;
+        for (const p of game.players) {
+          if (p.id !== currentPlayer.id) {
+            if (currentPlayer.cash < drawnCard.amount) {
+              return showError(`Insufficient funds to pay all players`);
+            }
+            p.cash = (p.cash || 0) + drawnCard.amount;
+            currentPlayer.cash = (currentPlayer.cash || 0) - drawnCard.amount;
+            totalPaid += drawnCard.amount;
+          }
+        }
+        handled = true;
+      } else if (drawnCard.type === 'renovation') {
+        return showError(`Card "${drawnCard.name}" requires manual handling. Please calculate the amount and use the transfer tool.`);
+      } else {
+        return showError(`Card type "${drawnCard.type}" not yet implemented`);
+      }
+
+      if (handled) {
+        const action = {
+          type: 'card',
+          playerName: currentPlayer.name,
+          cardName: drawnCard.name,
+          cardType: drawnCard.type,
+          timestamp: new Date().toISOString()
+        };
+        const actions_list = storage.getActions() || [];
+        actions_list.push(action);
+        storage.setActions(actions_list);
+        storage.saveGame(game);
+        
+        drawnCard = null;
+        await loadAll();
+      }
+    } catch (e) {
+      showError(`Failed to resolve card: ${e.message}`);
+    }
+  }
+
   function housesCount(prop) {
     const h = game.houses?.[prop.name];
     if (!h) return 0;
@@ -327,6 +434,7 @@
   <div style="margin: 16px 0; border-bottom: 2px solid #ddd;">
     <button on:click={() => activeTab = 'properties'} style="padding: 8px 16px; border: none; background: {activeTab === 'properties' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'properties' ? 'white' : 'black'}; cursor: pointer;">Properties</button>
     <button on:click={() => activeTab = 'transfers'} style="padding: 8px 16px; border: none; background: {activeTab === 'transfers' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'transfers' ? 'white' : 'black'}; cursor: pointer;">Transfers</button>
+    <button on:click={() => activeTab = 'cards'} style="padding: 8px 16px; border: none; background: {activeTab === 'cards' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'cards' ? 'white' : 'black'}; cursor: pointer;">🎲 Cards</button>
     <button on:click={() => activeTab = 'log'} style="padding: 8px 16px; border: none; background: {activeTab === 'log' ? '#2196f3' : '#f0f0f0'}; color: {activeTab === 'log' ? 'white' : 'black'}; cursor: pointer;">Action Log</button>
   </div>
 
@@ -378,6 +486,31 @@
       <button on:click={doTransfer} style="padding: 8px 16px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 4px;">Transfer</button>
     </div>
 
+  {:else if activeTab === 'cards'}
+    <h3>Draw a Card</h3>
+    {#if !drawnCard}
+      <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+        <button on:click={() => drawCard('Chance')} style="flex: 1; padding: 12px 16px; font-size: 1em; border: none; border-radius: 4px; background: #ff9800; color: white; cursor: pointer; font-weight: bold;">🎲 Draw Chance Card</button>
+        <button on:click={() => drawCard('Community Chest')} style="flex: 1; padding: 12px 16px; font-size: 1em; border: none; border-radius: 4px; background: #2196f3; color: white; cursor: pointer; font-weight: bold;">📦 Draw Community Chest</button>
+      </div>
+      <div style="text-align: center; color: #999; padding: 40px 20px;">
+        <p>Select a card deck to begin</p>
+      </div>
+    {:else}
+      <div style="background: #f5f5f5; border: 3px solid #333; border-radius: 8px; padding: 24px; margin-bottom: 20px; min-height: 200px; display: flex; flex-direction: column; justify-content: space-between;" class:chance={drawnCard.category === 'Chance'} class:chest={drawnCard.category === 'Community Chest'}>
+        <div>
+          <div style="font-size: 0.9em; font-weight: bold; color: #666; text-transform: uppercase; letter-spacing: 1px;">{drawnCard.category}</div>
+          <div style="font-size: 1.8em; font-weight: bold; margin: 12px 0; color: #333;">{drawnCard.name}</div>
+          <div style="font-size: 1.1em; color: #555; font-style: italic; margin: 12px 0;">{drawnCard.description}</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <button on:click={resolveCard} style="flex: 2; padding: 12px 16px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; font-weight: bold;">✓ Resolve Card</button>
+        <button on:click={undoCard} style="flex: 1; padding: 12px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; font-weight: bold;">↶ Undo</button>
+      </div>
+    {/if}
+
   {:else if activeTab === 'log'}
     <h3>Action Log</h3>
     <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px; background: #f9f9f9;">
@@ -400,3 +533,15 @@
 {:else}
   <p style="color: #999; text-align: center; padding: 20px;">No game in progress. Create one in the Players tab.</p>
 {/if}
+
+<style>
+  :global(.chance) {
+    border-color: #ff9800 !important;
+    background: linear-gradient(135deg, #ffe0b2 0%, #fff8e1 100%) !important;
+  }
+
+  :global(.chest) {
+    border-color: #2196f3 !important;
+    background: linear-gradient(135deg, #bbdefb 0%, #e3f2fd 100%) !important;
+  }
+</style>

@@ -159,10 +159,9 @@ export async function getAvailableCardSets() {
   for (const filename of cardSets) {
     try {
       const url = `${basePath}config/cards/${filename}`;
-      const response = await fetch(url, { method: 'HEAD' });
+      const response = await fetch(url);
       if (response.ok) {
-        const dataResponse = await fetch(url);
-        const data = await dataResponse.json();
+        const data = await response.json();
         available.push({
           filename,
           title: data.title || filename
@@ -187,10 +186,9 @@ export async function getAvailablePropertySets() {
   for (const filename of propertySets) {
     try {
       const url = `${basePath}config/properties/${filename}`;
-      const response = await fetch(url, { method: 'HEAD' });
+      const response = await fetch(url);
       if (response.ok) {
-        const dataResponse = await fetch(url);
-        const data = await dataResponse.json();
+        const data = await response.json();
         available.push({
           filename,
           title: data.title || filename
