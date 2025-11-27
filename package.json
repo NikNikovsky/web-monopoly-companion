@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "description": "Web-only Monopoly companion: dice, manual rolls, editable card names. Runs entirely in the browser using localStorage.",
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
+    "sync-configs": "node scripts/sync-configs.js",
+    "dev": "npm run sync-configs && cd frontend && npm run dev",
+    "build": "npm run sync-configs && cd frontend && npm run build",
     "preview": "cd frontend && npm run preview"
   },
   "author": "",
