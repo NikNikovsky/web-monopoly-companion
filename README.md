@@ -1,4 +1,5 @@
 # Monopoly Web Companion
+[![AI Slop Inside](https://sladge.net/badge.svg)](https://sladge.net)
 
 A **100% browser-based** Monopoly companion app - no backend needed! Play Monopoly with an interactive interface, manage players, roll dice, buy properties, and edit custom configurations. Everything runs locally in your browser using localStorage.
 You can play it here (TODO: Get Pages working)
